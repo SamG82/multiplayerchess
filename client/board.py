@@ -2,6 +2,7 @@ import pygame
 import images
 
 class Board:
+
     def __init__(self, screen):
         self.screen = screen
         self.screen_rect = self.screen.get_rect()
@@ -25,12 +26,20 @@ class Board:
         # draw the rectangle for the entire board
         pygame.draw.rect(self.screen, "black", self.rect, 1)
 
-        # draw the squares
+        # boolean to flip when alternating light and dark squares
+        start_light = True
+
+        # draw the grid
         for row in range(self.rect.left, self.rect.right, square_size):
             for column in range(self.rect.top, self.rect.bottom, square_size):
-                
-                if (column % 2 == 0 and row % 2 == 0) or (column % 2 != 0 and row % 2 != 0):
-                    self.screen.blit(light_square, (row, column))
-                else:
-                    self.screen.blit(dark_square, (row, column))
 
+                square_rect = None
+    
+                # alternate light and dark squares
+                if start_light:
+                    square_rect = self.screen.blit(light_square, (row, column))
+                else:
+                    square_rect = self.screen.blit(dark_square, (row, column))
+
+                start_light = not start_light
+            start_light = not start_light
