@@ -1,4 +1,5 @@
 import pygame
+import images
 
 class Board:
     def __init__(self, screen):
@@ -7,7 +8,7 @@ class Board:
         self.rect = None
 
     # sets up the board dimensions and draws the initial grid
-    def draw(self, perspective):
+    def draw(self):
         center = self.screen_rect.center
         size = 0.93 * self.screen_rect.height 
         
@@ -17,14 +18,11 @@ class Board:
 
         square_size = int(self.rect.width / 8)
 
-        # load images
-        dark_square = pygame.image.load("./media/square brown dark_png_1024px.png").convert()
-        light_square = pygame.image.load("./media/square brown light_png_1024px.png").convert()
-
         # scale images to the correct square size
-        dark_square = pygame.transform.scale(dark_square, (square_size,) * 2)
-        light_square = pygame.transform.scale(light_square, (square_size,) * 2)
+        dark_square = pygame.transform.scale(images.dark_square, (square_size,) * 2)
+        light_square = pygame.transform.scale(images.light_square, (square_size,) * 2)
         
+        # draw the rectangle for the entire board
         pygame.draw.rect(self.screen, "black", self.rect, 1)
 
         # draw the squares

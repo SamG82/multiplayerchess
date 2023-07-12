@@ -11,7 +11,7 @@ pygame.display.set_caption("Chess")
 screen.fill("white")
 
 game_board = Board(screen)
-game_board.draw("black")
+game_board.draw()
 
 run = True
 while run:
