@@ -3,10 +3,16 @@ import images
 
 class Board:
 
+    class Square:
+        def __init__(self, rect: pygame.Rect, id: int):
+            self.rect = rect
+            self.id = id
+            
     def __init__(self, screen):
         self.screen = screen
         self.screen_rect = self.screen.get_rect()
         self.rect = None
+        self.squares = []
 
     # sets up the board dimensions and draws the initial grid
     def draw(self):
@@ -29,17 +35,32 @@ class Board:
         # boolean to flip when alternating light and dark squares
         start_light = True
 
+        # number id of the square 0-63
+        square_id = 0
+
+        x_values = range(self.rect.left, self.rect.right, square_size)
+        y_values = range(self.rect.top, self.rect.bottom, square_size)
+
+
         # draw the grid
-        for row in range(self.rect.left, self.rect.right, square_size):
-            for column in range(self.rect.top, self.rect.bottom, square_size):
+        for x in x_values:
+            for y in y_values:
 
                 square_rect = None
     
                 # alternate light and dark squares
                 if start_light:
-                    square_rect = self.screen.blit(light_square, (row, column))
+                    square_rect = self.screen.blit(light_square, (x, y))
                 else:
-                    square_rect = self.screen.blit(dark_square, (row, column))
+                    square_rect = self.screen.blit(dark_square, (x, y))
+
+                new_square = self.Square(square_rect, square_id)
+                self.squares.append(new_square)
+
+                square_id += 1
 
                 start_light = not start_light
+
             start_light = not start_light
+
+        
