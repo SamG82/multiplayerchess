@@ -2,12 +2,6 @@ import pygame
 import images
 
 class Board:
-
-    class Square:
-        def __init__(self, rect: pygame.Rect, id: int):
-            self.rect = rect
-            self.id = id
-            
     def __init__(self, screen):
         self.screen = screen
         self.screen_rect = self.screen.get_rect()
@@ -41,7 +35,6 @@ class Board:
         x_values = range(self.rect.left, self.rect.right, square_size)
         y_values = range(self.rect.top, self.rect.bottom, square_size)
 
-
         # draw the grid
         for x in x_values:
             for y in y_values:
@@ -54,7 +47,7 @@ class Board:
                 else:
                     square_rect = self.screen.blit(dark_square, (x, y))
 
-                new_square = self.Square(square_rect, square_id)
+                new_square = (square_rect, square_id)
                 self.squares.append(new_square)
 
                 square_id += 1
