@@ -29,8 +29,8 @@ class Board:
         # boolean to flip when alternating light and dark squares
         start_light = True
 
-        # number id of the square 0-63
-        square_id = 0
+        # number id of the square 1-64
+        square_id = 1
 
         x_values = range(self.rect.left, self.rect.right, square_size)
         y_values = range(self.rect.top, self.rect.bottom, square_size)
