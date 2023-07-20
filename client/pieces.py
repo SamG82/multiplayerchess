@@ -32,8 +32,11 @@ class Piece:
     
     def __init__(self, initial_position):
         self.position = initial_position
+    
+    def generate_linear_moves(self, direction_offsets, barriers=None):
+        if barriers is None:
+            barriers = Piece.directions_edges
 
-    def generate_linear_moves(self, *direction_offsets):
         all_moves = []
             
         new_move = self.position
@@ -58,7 +61,7 @@ class Rook(Piece):
     offsets = (-1, 1, -8, 8)
 
     def get_moves(self):
-        return self.generate_linear_moves(*Rook.offsets)
+        return self.generate_linear_moves(Rook.offsets)
         
 
 class Bishop(Piece):
@@ -67,10 +70,12 @@ class Bishop(Piece):
     offsets = (-7, 7, -9, 9)
 
     def get_moves(self):
-        return self.generate_linear_moves(*Bishop.offsets)
+        return self.generate_linear_moves(Bishop.offsets)
     
 class Queen(Piece):
 
     # can just combine the Rook and Bishop offsets
+    offsets = Rook.offsets + Bishop.offsets
+
     def get_moves(self):
-        return self.generate_linear_moves(*(Rook.offsets + Bishop.offsets))
+        return self.generate_linear_moves(Queen.offsets)
