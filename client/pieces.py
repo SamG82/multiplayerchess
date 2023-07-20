@@ -79,3 +79,17 @@ class Queen(Piece):
 
     def get_moves(self):
         return self.generate_linear_moves(Queen.offsets)
+
+class King(Piece):
+        
+    def get_moves(self):
+
+        # the king moves like the queen but with a limited range
+        king_edges = Piece.directions_edges
+
+        # add an extra stopping point at each boundary to limit the range on top of the already precomputed edges
+        for key in king_edges:
+            king_edges[key].append(self.position + key)
+        
+        # use the same queen offsets,
+        return self.generate_linear_moves(Queen.offsets, king_edges)
