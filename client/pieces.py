@@ -13,7 +13,7 @@ class Piece:
     57 58 59 60 61 62 63 64
     """
 
-    top_row = list(range(-1, 9))
+    top_row = list(range(1, 9))
     left_column = list(range(1, 58, 8))
     bottom_row = list(range(57, 65))
     right_column = list(range(8, 65, 8))
@@ -29,7 +29,7 @@ class Piece:
         -9: top_row + left_column,
         9: bottom_row + right_column
     }
-
+    
     def __init__(self, initial_position):
         self.position = initial_position
 
@@ -74,4 +74,3 @@ class Queen(Piece):
     # can just combine the Rook and Bishop offsets
     def get_moves(self):
         return self.generate_linear_moves(*(Rook.offsets + Bishop.offsets))
-    
