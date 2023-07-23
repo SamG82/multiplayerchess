@@ -1,27 +1,19 @@
 import pygame
 import images
+from chess import Board
 
-class Board:
+class Game:
+
     def __init__(self, screen):
         self.screen = screen
         self.screen_rect = self.screen.get_rect()
         self.rect = None
-        self.squares = []
+        
+        self.squares = dict()
+        self.board = Board()
 
-    # converts integer move id to cartesian coordinates
-    @staticmethod
-    def get_square_coordinates(move):
-        row = int(move/8.01) + 1
-        column = None
-
-        for possible_column in range(1, 9):
-            if (possible_column - move) % 8 == 0:
-                column = possible_column
-
-        return (row, column)
-    
     # sets up the board dimensions and draws the initial grid
-    def draw(self):
+    def draw_grid(self):
         center = self.screen_rect.center
         size = 0.93 * self.screen_rect.height 
         
@@ -38,34 +30,29 @@ class Board:
         # draw the rectangle for the entire board
         pygame.draw.rect(self.screen, "black", self.rect, 1)
 
+        square_id = 1
+
         # boolean to flip when alternating light and dark squares
         start_light = True
-
-        # number id of the square 1-64
-        square_id = 1
 
         x_values = range(self.rect.left, self.rect.right, square_size)
         y_values = range(self.rect.top, self.rect.bottom, square_size)
 
         # draw the grid
-        for x in x_values:
-            for y in y_values:
-
+        for y in y_values:
+            for x in x_values:
+                
                 square_rect = None
-    
                 # alternate light and dark squares
                 if start_light:
                     square_rect = self.screen.blit(light_square, (x, y))
                 else:
                     square_rect = self.screen.blit(dark_square, (x, y))
 
-                new_square = (square_rect, square_id)
-                self.squares.append(new_square)
-
+                self.squares[square_id] = square_rect
+                
                 square_id += 1
 
                 start_light = not start_light
 
             start_light = not start_light
-
-        

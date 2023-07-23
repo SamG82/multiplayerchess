@@ -1,5 +1,5 @@
 import pygame
-from board import Board
+from game import Game
 
 screen_size = (1200, 800)
 
@@ -10,8 +10,8 @@ pygame.display.set_caption("Chess")
 
 screen.fill("white")
 
-game_board = Board(screen)
-game_board.draw()
+game_board = Game(screen)
+game_board.draw_grid()
 
 run = True
 while run:

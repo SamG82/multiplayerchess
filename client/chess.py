@@ -1,19 +1,6 @@
-from board import Board
 
 class Piece:
     
-    # board representation:
-    """
-    1  2  3  4  5  6  7  8
-    9  10 11 12 13 14 15 16
-    17 18 19 20 21 22 23 24
-    25 26 27 28 29 30 31 32
-    33 34 35 36 37 38 39 40
-    41 42 43 44 45 46 47 48
-    49 50 51 52 53 54 55 56
-    57 58 59 60 61 62 63 64
-    """
-
     top_row = list(range(1, 9))
     left_column = list(range(1, 58, 8))
     bottom_row = list(range(57, 65))
@@ -31,8 +18,9 @@ class Piece:
         9: bottom_row + right_column
     }
     
-    def __init__(self, initial_position):
+    def __init__(self, side, initial_position):
         self.position = initial_position
+        self.side = side
     
     # gets custom barriers for pieces that have shorter range
     def get_limited_barrier_range(self, direction_offsets):
@@ -70,6 +58,8 @@ class Piece:
 
         return all_moves
        
+    def __str__(self):
+        return f"{type(self).__name__}_{self.side}".lower()
 
 class Rook(Piece):
     
@@ -111,7 +101,7 @@ class Knight(Piece):
     offsets = (-17, -15, -10, -6, 6, 10, 15, 17)
 
     def get_moves(self):
-        
+
         # filters out knight moves that are too far away from the current position
         def validate_move(move):
             if move < 1 or move > 64:
@@ -132,3 +122,45 @@ class Knight(Piece):
         filtered_moves = list(filter(validate_move, unfiltered_moves))
 
         return filtered_moves
+    
+
+class Board:
+
+    # board representation:
+    """
+    1  2  3  4  5  6  7  8
+    9  10 11 12 13 14 15 16
+    17 18 19 20 21 22 23 24
+    25 26 27 28 29 30 31 32
+    33 34 35 36 37 38 39 40
+    41 42 43 44 45 46 47 48
+    49 50 51 52 53 54 55 56
+    57 58 59 60 61 62 63 64
+    """
+
+    starting_order = [Rook, Knight, Bishop, Queen,
+                      King, Bishop, Knight, Rook]
+    
+    def __init__(self):
+        self.pieces = []
+
+        for i in range(1, 9):
+            b_piece = Board.starting_order[i-1]("black", i)
+            w_piece = Board.starting_order[i-1]("white", i + 56)
+
+            self.pieces.append(b_piece)
+            self.pieces.append(w_piece)
+
+    
+    # converts integer move id to cartesian coordinates
+    @staticmethod
+    def get_square_coordinates(move):
+        row = int(move/8.01) + 1
+        column = None
+
+        for possible_column in range(1, 9):
+            if (possible_column - move) % 8 == 0:
+                column = possible_column
+
+        return (row, column)
+    
