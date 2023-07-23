@@ -1,3 +1,4 @@
+from board import Board
 
 class Piece:
     
@@ -33,19 +34,19 @@ class Piece:
     def __init__(self, initial_position):
         self.position = initial_position
     
-    # gets custom borders for pieces that have shorter range
+    # gets custom barriers for pieces that have shorter range
     def get_limited_barrier_range(self, direction_offsets):
-        borders = Piece.directions_edges
+        barriers = Piece.directions_edges
 
         for offset in direction_offsets:
             try:
-                # add the new border
-                borders[offset].append(self.position + offset)
+                # add the new barrier
+                barriers[offset].append(self.position + offset)
             except KeyError:
-                # border doesn't exist. make a list for it
-                borders[offset] = [self.position + offset]
+                # barrier doesn't exist. make a list for it
+                barriers[offset] = [self.position + offset]
 
-        return borders
+        return barriers
 
     # gets a list of moves in each direction up until the barriers
     def generate_linear_moves(self, direction_offsets, barriers=None):
@@ -87,6 +88,7 @@ class Bishop(Piece):
     def get_moves(self):
         return self.generate_linear_moves(Bishop.offsets)
     
+
 class Queen(Piece):
 
     # can just combine the Rook and Bishop offsets
@@ -95,10 +97,38 @@ class Queen(Piece):
     def get_moves(self):
         return self.generate_linear_moves(Queen.offsets)
 
+
 class King(Piece):
         
     def get_moves(self):
         
-        # use the same queen offsets,
+        # use the same queen offsets
         return self.generate_linear_moves(Queen.offsets, self.get_limited_barrier_range(Queen.offsets))
-    
+
+
+class Knight(Piece):
+
+    offsets = (-17, -15, -10, -6, 6, 10, 15, 17)
+
+    def get_moves(self):
+        
+        # filters out knight moves that are too far away from the current position
+        def validate_move(move):
+            if move < 1 or move > 64:
+                return False
+            
+            move_x, move_y = Board.get_square_coordinates(move)
+            position_x, position_y = Board.get_square_coordinates(self.position)
+
+            # move is too far away to be valid
+            if abs(position_x - move_x) + abs(position_y-move_y) > 4:
+                return False
+            
+            return True
+            
+        unfiltered_moves = self.generate_linear_moves(Knight.offsets, self.get_limited_barrier_range(Knight.offsets))
+
+        # filter out the moves that aren't possible
+        filtered_moves = list(filter(validate_move, unfiltered_moves))
+
+        return filtered_moves
