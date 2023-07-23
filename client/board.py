@@ -8,6 +8,18 @@ class Board:
         self.rect = None
         self.squares = []
 
+    # converts integer move id to cartesian coordinates
+    @staticmethod
+    def get_square_coordinates(move):
+        row = int(move/8.01) + 1
+        column = None
+
+        for possible_column in range(1, 9):
+            if (possible_column - move) % 8 == 0:
+                column = possible_column
+
+        return (row, column)
+    
     # sets up the board dimensions and draws the initial grid
     def draw(self):
         center = self.screen_rect.center
