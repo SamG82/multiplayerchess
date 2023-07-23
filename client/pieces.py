@@ -33,6 +33,21 @@ class Piece:
     def __init__(self, initial_position):
         self.position = initial_position
     
+    # gets custom borders for pieces that have shorter range
+    def get_limited_barrier_range(self, direction_offsets):
+        borders = Piece.directions_edges
+
+        for offset in direction_offsets:
+            try:
+                # add the new border
+                borders[offset].append(self.position + offset)
+            except KeyError:
+                # border doesn't exist. make a list for it
+                borders[offset] = [self.position + offset]
+
+        return borders
+
+    # gets a list of moves in each direction up until the barriers
     def generate_linear_moves(self, direction_offsets, barriers=None):
         if barriers is None:
             barriers = Piece.directions_edges
@@ -45,7 +60,7 @@ class Piece:
         for direction in direction_offsets:
 
             # move and append the possible new_move in the corresponding direction until it reaches an edge
-            while new_move not in Piece.directions_edges[direction]:
+            while new_move not in barriers[direction]:
                 new_move += direction
                 all_moves.append(new_move)
 
@@ -83,13 +98,7 @@ class Queen(Piece):
 class King(Piece):
         
     def get_moves(self):
-
-        # the king moves like the queen but with a limited range
-        king_edges = Piece.directions_edges
-
-        # add an extra stopping point at each boundary to limit the range on top of the already precomputed edges
-        for key in king_edges:
-            king_edges[key].append(self.position + key)
         
         # use the same queen offsets,
-        return self.generate_linear_moves(Queen.offsets, king_edges)
+        return self.generate_linear_moves(Queen.offsets, self.get_limited_barrier_range(Queen.offsets))
+    
