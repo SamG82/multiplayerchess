@@ -12,6 +12,7 @@ screen.fill("white")
 
 game_board = Game(screen)
 game_board.draw_grid()
+game_board.draw_pieces()
 
 run = True
 while run:
