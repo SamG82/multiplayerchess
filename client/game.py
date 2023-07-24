@@ -73,3 +73,17 @@ class Game:
 
             self.screen.blit(scaled_image, piece_rect)
 
+    def handle_piece_click(self, mouse_pos):
+        clicked_square = None
+        for square_id, square in self.squares.items():
+            if square.collidepoint(mouse_pos):
+                clicked_square = square_id
+
+        clicked_piece = None
+        for piece in self.board.pieces:
+            if piece.position == clicked_square:
+                clicked_piece = piece
+
+        if clicked_piece == None:
+            return
+        
