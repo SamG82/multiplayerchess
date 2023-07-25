@@ -43,6 +43,11 @@ class Piece:
     # gets a list of valid moves given the current board state for linearly moving pieces
     def get_moves(self, game_board):
         piece_positions = [piece.position for piece in game_board.pieces if piece.position != self.position]
+        
+        same_side_positions = []
+        for piece in game_board.pieces:
+            if piece.side == self.side and piece.position != self.position:
+                same_side_positions.append(piece.position)
 
         all_moves = []
         new_move = self.position
@@ -55,9 +60,12 @@ class Piece:
                     break
                 
                 new_move += offset
-                all_moves.append(new_move)
+
+                if new_move not in same_side_positions:
+                    all_moves.append(new_move)
 
             new_move = self.position
+
         return all_moves
     
     def __str__(self):
@@ -95,13 +103,20 @@ class Knight(Piece):
 
     offsets = (-17, -15, -10, -6, 6, 10, 15, 17)
     
+    def valid_knight_move(self, move):
+        within_bounds = move > 0 and move < 65
+        within_range = get_distance(self.position, move) < 4
+
+        return within_range and within_bounds
+    
     def get_moves(self, game_board):
         moves = []
         
+        same_side_positions = [piece.position for piece in game_board.pieces if piece.side == self.side]
         for offset in Knight.offsets:
             move = self.position + offset
 
-            if get_distance(self.position, move) < 4 and move > 0 and move < 65:
+            if self.valid_knight_move(move) and move not in same_side_positions:
                 moves.append(move)
 
         return moves
