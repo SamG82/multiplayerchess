@@ -32,8 +32,10 @@ class Game:
 
         self.squares = dict()
         self.board = Board()
+
         self.selected_square = None
-        self.current_moves = []
+        self.selected_piece = None
+        self.potential_move_squares = []
 
 
     # draws squares for the grid
@@ -49,7 +51,6 @@ class Game:
         # draw the grid
         for y in y_values:
             for x in x_values:
-                
                 square_rect = None
 
                 # alternate light and dark squares
@@ -59,7 +60,6 @@ class Game:
                     square_rect = self.screen.blit(self.dark_square, (x, y))
 
                 self.squares[square_id] = square_rect
-                
                 square_id += 1
 
                 start_light = not start_light
@@ -77,7 +77,7 @@ class Game:
             self.screen.blit(scaled_image, piece_rect)
 
     def draw_markers(self):
-        for square in self.current_moves:
+        for square in self.potential_move_squares:
             
             highlight_rect = self.move_highlight.get_rect()
             highlight_rect.center = square.center
@@ -85,18 +85,35 @@ class Game:
             self.screen.blit(self.move_highlight, highlight_rect)
 
     def handle_piece_click(self, mouse_pos):
+
+        # get the clicked square
         clicked_square = None
         for square_id, square in self.squares.items():
             if square.collidepoint(mouse_pos):
                 clicked_square = square_id
 
+        # look up if there is a clicked piece by square
         clicked_piece = None
         for piece in self.board.pieces:
             if piece.position == clicked_square:
                 clicked_piece = piece
 
-        if clicked_piece == None:
+        # unselect the selected piece if it was clicked again
+        if clicked_piece == self.selected_piece:
+            self.selected_piece = None
+
+        elif clicked_piece is not None:
+            self.selected_piece = clicked_piece
+
+        # no selected piece, clear the potential moves
+        if self.selected_piece is None:
+            self.potential_move_squares = []
             return
         
-        potential_moves = clicked_piece.get_moves(self.board)
-        self.current_moves = [self.squares[move] for move in potential_moves]
+        self.potential_move_squares = [self.squares[move] for move in self.selected_piece.get_moves()]
+
+        # make the move, clear selected piece and moves
+        if clicked_square in self.selected_piece.get_moves():
+            self.selected_piece.make_move(clicked_square)
+            self.selected_piece = None
+            self.potential_move_squares = []

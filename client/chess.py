@@ -36,16 +36,17 @@ def get_distance(square1, square2):
 
 class Piece:
 
-    def __init__(self, side, initial_position):
+    def __init__(self, side, initial_position, board):
         self.position = initial_position
         self.side = side
-    
+        self.board = board
+
     # gets a list of valid moves given the current board state for linearly moving pieces
-    def get_moves(self, game_board):
-        piece_positions = [piece.position for piece in game_board.pieces if piece.position != self.position]
+    def get_moves(self):
+        piece_positions = [piece.position for piece in self.board.pieces if piece.position != self.position]
         
         same_side_positions = []
-        for piece in game_board.pieces:
+        for piece in self.board.pieces:
             if piece.side == self.side and piece.position != self.position:
                 same_side_positions.append(piece.position)
 
@@ -68,6 +69,10 @@ class Piece:
 
         return all_moves
     
+    def make_move(self, move):
+        if move in self.get_moves():
+            self.position = move
+
     def __str__(self):
         return f"{type(self).__name__}_{self.side}".lower()
 
@@ -109,10 +114,10 @@ class Knight(Piece):
 
         return within_range and within_bounds
     
-    def get_moves(self, game_board):
+    def get_moves(self):
         moves = []
         
-        same_side_positions = [piece.position for piece in game_board.pieces if piece.side == self.side]
+        same_side_positions = [piece.position for piece in self.board.pieces if piece.side == self.side]
         for offset in Knight.offsets:
             move = self.position + offset
 
@@ -130,8 +135,8 @@ class Board:
         self.pieces = []
 
         for i in range(1, 9):
-            b_piece = Board.starting_order[i-1]("black", i)
-            w_piece = Board.starting_order[i-1]("white", i + 56)
+            b_piece = Board.starting_order[i-1]("black", i, self)
+            w_piece = Board.starting_order[i-1]("white", i + 56, self)
 
             self.pieces.append(b_piece)
             self.pieces.append(w_piece)
