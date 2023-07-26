@@ -21,7 +21,7 @@ while run:
 
         if event.type == pygame.MOUSEBUTTONUP:
             mouse_pos = pygame.mouse.get_pos()
-            game_board.handle_piece_click(mouse_pos)
+            game_board.handle_click(mouse_pos)
     
     game_board.draw_squares()
     game_board.draw_pieces()

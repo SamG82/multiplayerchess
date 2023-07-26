@@ -2,6 +2,8 @@ from pygame.image import load
 
 dark_square = load("./media/square brown dark_png_1024px.png")
 light_square = load("./media/square brown light_png_1024px.png")
+yellow_square = load("./media/yellow_square.png")
+
 move_marker = load("./media/move_marker.png")
 
 piece_images = {

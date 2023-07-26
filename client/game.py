@@ -2,38 +2,40 @@ import pygame
 import images
 from chess import Board
 
+
 class Game:
     size_scale = 0.93
     piece_scale = 0.78
     move_highlight_scale = 0.38
     
     def __init__(self, screen):
+        self.board = Board()
         self.screen = screen
-        self.screen_rect = self.screen.get_rect()
 
-        center = self.screen_rect.center
-        size = Game.size_scale * self.screen_rect.height 
+        center = self.screen.get_rect().center
+        size = Game.size_scale * self.screen.get_height()
         
         # rect for the entire board
         self.rect = pygame.Rect((0, 0), (size,) * 2)
         self.rect.center = center
 
         self.square_size = int(self.rect.width / 8)
+        self.square_columns = range(self.rect.left, self.rect.right, self.square_size)
+        self.square_rows = range(self.rect.top, self.rect.bottom, self.square_size)
 
         # scale images to the correct square size
         self.dark_square = pygame.transform.scale(images.dark_square, (self.square_size,) * 2)
         self.light_square = pygame.transform.scale(images.light_square, (self.square_size,) * 2)
-
+        self.yellow_square = pygame.transform.scale(images.yellow_square, (self.square_size,) * 2)
+        
         self.move_highlight = pygame.transform.scale(images.move_marker, (self.move_highlight_scale * self.square_size,) * 2)
         self.move_highlight.set_alpha(100)
 
         # draw the rectangle for the entire board
         pygame.draw.rect(self.screen, "black", self.rect, 1)
 
+        # state variables for interaction
         self.squares = dict()
-        self.board = Board()
-
-        self.selected_square = None
         self.selected_piece = None
         self.potential_move_squares = []
 
@@ -45,17 +47,17 @@ class Game:
         # boolean to flip when alternating light and dark squares
         start_light = True
 
-        x_values = range(self.rect.left, self.rect.right, self.square_size)
-        y_values = range(self.rect.top, self.rect.bottom, self.square_size)
-
         # draw the grid
-        for y in y_values:
-            for x in x_values:
+        for y in self.square_rows:
+            for x in self.square_columns:
                 square_rect = None
 
-                # alternate light and dark squares
-                if start_light:
+                if self.selected_piece is not None and square_id == self.selected_piece.position:
+                    square_rect = self.screen.blit(self.yellow_square, (x, y))
+
+                elif start_light:
                     square_rect = self.screen.blit(self.light_square, (x, y))
+
                 else:
                     square_rect = self.screen.blit(self.dark_square, (x, y))
 
@@ -84,7 +86,7 @@ class Game:
             
             self.screen.blit(self.move_highlight, highlight_rect)
 
-    def handle_piece_click(self, mouse_pos):
+    def handle_click(self, mouse_pos):
 
         # get the clicked square
         clicked_square = None
