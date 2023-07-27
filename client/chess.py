@@ -40,6 +40,7 @@ class Piece:
         self.position = initial_position
         self.side = side
         self.board = board
+        self.image_name = f"{type(self).__name__}_{self.side}".lower()
 
     # gets a list of valid moves given the current board state for linearly moving pieces
     def get_moves(self):
@@ -73,8 +74,6 @@ class Piece:
         if move in self.get_moves():
             self.position = move
 
-    def __str__(self):
-        return f"{type(self).__name__}_{self.side}".lower()
 
 class Rook(Piece):
     
@@ -134,9 +133,9 @@ class Board:
     def __init__(self):
         self.pieces = []
 
-        for i in range(1, 9):
-            b_piece = Board.starting_order[i-1]("black", i, self)
-            w_piece = Board.starting_order[i-1]("white", i + 56, self)
+        for i in range(0, 8):
+            b_piece = Board.starting_order[i]("black", i + 1, self)
+            w_piece = Board.starting_order[i]("white", i + 57, self)
 
             self.pieces.append(b_piece)
             self.pieces.append(w_piece)

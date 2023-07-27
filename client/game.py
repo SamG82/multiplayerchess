@@ -2,11 +2,10 @@ import pygame
 import images
 from chess import Board
 
-
 class Game:
     size_scale = 0.93
     piece_scale = 0.78
-    move_highlight_scale = 0.38
+    move_marker_scale = 0.38
     
     def __init__(self, screen):
         self.board = Board()
@@ -19,17 +18,10 @@ class Game:
         self.rect = pygame.Rect((0, 0), (size,) * 2)
         self.rect.center = center
 
+        # square size and points to draw squares at
         self.square_size = int(self.rect.width / 8)
         self.square_columns = range(self.rect.left, self.rect.right, self.square_size)
         self.square_rows = range(self.rect.top, self.rect.bottom, self.square_size)
-
-        # scale images to the correct square size
-        self.dark_square = pygame.transform.scale(images.dark_square, (self.square_size,) * 2)
-        self.light_square = pygame.transform.scale(images.light_square, (self.square_size,) * 2)
-        self.yellow_square = pygame.transform.scale(images.yellow_square, (self.square_size,) * 2)
-        
-        self.move_highlight = pygame.transform.scale(images.move_marker, (self.move_highlight_scale * self.square_size,) * 2)
-        self.move_highlight.set_alpha(100)
 
         # draw the rectangle for the entire board
         pygame.draw.rect(self.screen, "black", self.rect, 1)
@@ -37,7 +29,6 @@ class Game:
         # state variables for interaction
         self.squares = dict()
         self.selected_piece = None
-        self.potential_move_squares = []
 
 
     # draws squares for the grid
@@ -53,13 +44,13 @@ class Game:
                 square_rect = None
 
                 if self.selected_piece is not None and square_id == self.selected_piece.position:
-                    square_rect = self.screen.blit(self.yellow_square, (x, y))
+                    square_rect = self.screen.blit(images.get("yellow_square", self.square_size), (x, y))
 
                 elif start_light:
-                    square_rect = self.screen.blit(self.light_square, (x, y))
+                    square_rect = self.screen.blit(images.get("light_square", self.square_size), (x, y))
 
                 else:
-                    square_rect = self.screen.blit(self.dark_square, (x, y))
+                    square_rect = self.screen.blit(images.get("dark_square", self.square_size), (x, y))
 
                 self.squares[square_id] = square_rect
                 square_id += 1
@@ -67,24 +58,23 @@ class Game:
                 start_light = not start_light
 
             start_light = not start_light
-        
+    
+    def draw_centered_image(self, image, square_id):
+        rect = image.get_rect()
+        rect.center = self.squares[square_id].center
+        self.screen.blit(image, rect)
+
     def draw_pieces(self):
         for piece in self.board.pieces:
-            piece_image = images.piece_images[str(piece)]
-            scaled_image = pygame.transform.scale(piece_image, (Game.piece_scale * self.square_size,) * 2)
-            
-            piece_rect = scaled_image.get_rect()
-            piece_rect.center = self.squares[piece.position].center
-
-            self.screen.blit(scaled_image, piece_rect)
+            piece_image = images.get(piece.image_name, self.square_size * Game.piece_scale)
+            self.draw_centered_image(piece_image, piece.position)
 
     def draw_markers(self):
-        for square in self.potential_move_squares:
-            
-            highlight_rect = self.move_highlight.get_rect()
-            highlight_rect.center = square.center
-            
-            self.screen.blit(self.move_highlight, highlight_rect)
+        if self.selected_piece is None: return
+        
+        for square in self.selected_piece.get_moves():
+            marker_image  = images.get("move_marker", self.square_size * Game.move_marker_scale, 100)
+            self.draw_centered_image(marker_image, square)
 
     def handle_click(self, mouse_pos):
 
@@ -112,10 +102,7 @@ class Game:
             self.potential_move_squares = []
             return
         
-        self.potential_move_squares = [self.squares[move] for move in self.selected_piece.get_moves()]
-
         # make the move, clear selected piece and moves
         if clicked_square in self.selected_piece.get_moves():
             self.selected_piece.make_move(clicked_square)
             self.selected_piece = None
-            self.potential_move_squares = []

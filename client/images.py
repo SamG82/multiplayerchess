@@ -1,23 +1,14 @@
 from pygame.image import load
+from pygame.transform import scale
+import os
 
-dark_square = load("./media/square brown dark_png_1024px.png")
-light_square = load("./media/square brown light_png_1024px.png")
-yellow_square = load("./media/yellow_square.png")
+IMAGE_DIRECTORY = "./media"
 
-move_marker = load("./media/move_marker.png")
+image_files = os.listdir(IMAGE_DIRECTORY)
+loaded_images = dict([(image_name[0:len(image_name)-4], load(f"{IMAGE_DIRECTORY}/{image_name}")) for image_name in image_files])
 
-piece_images = {
-    "pawn_black": load("./media/b_pawn_png_1024px.png"),
-    "rook_black": load("./media/b_rook_png_1024px.png"),
-    "knight_black": load("./media/b_knight_png_1024px.png"),
-    "bishop_black": load("./media/b_bishop_png_1024px.png"),
-    "queen_black": load("./media/b_queen_png_1024px.png"),
-    "king_black": load("./media/b_king_png_1024px.png"),
+def get(name, size, alpha=255):
+    image = loaded_images[name]
+    image.set_alpha(alpha)
 
-    "pawn_white": load("./media/w_pawn_png_1024px.png"),
-    "rook_white": load("./media/w_rook_png_1024px.png"),
-    "knight_white": load("./media/w_knight_png_1024px.png"),
-    "bishop_white": load("./media/w_bishop_png_1024px.png"),
-    "queen_white": load("./media/w_queen_png_1024px.png"),
-    "king_white": load("./media/w_king_png_1024px.png")
-}
+    return scale(image, (size,) * 2)

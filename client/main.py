@@ -14,7 +14,10 @@ game_board = Game(screen)
 
 run = True
 while run:
- 
+    game_board.draw_squares()
+    game_board.draw_pieces()
+    game_board.draw_markers()
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
@@ -23,9 +26,6 @@ while run:
             mouse_pos = pygame.mouse.get_pos()
             game_board.handle_click(mouse_pos)
     
-    game_board.draw_squares()
-    game_board.draw_pieces()
-    game_board.draw_markers()
 
     pygame.display.flip()
 
