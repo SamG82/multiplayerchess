@@ -18,16 +18,19 @@ class Game:
         self.rect = pygame.Rect((0, 0), (size,) * 2)
         self.rect.center = center
 
-        # square size and points to draw squares at
+        # square size and range of points to draw squares at
         self.square_size = int(self.rect.width / 8)
         self.square_columns = range(self.rect.left, self.rect.right, self.square_size)
         self.square_rows = range(self.rect.top, self.rect.bottom, self.square_size)
+
+        self.piece_size = Game.piece_scale * self.square_size
+        self.move_marker_size = Game.move_marker_scale * self.square_size
 
         # draw the rectangle for the entire board
         pygame.draw.rect(self.screen, "black", self.rect, 1)
 
         # state variables for interaction
-        self.squares = dict()
+        self.squares: dict[int, pygame.Rect] = dict()
         self.selected_piece = None
 
 
@@ -55,28 +58,32 @@ class Game:
                 self.squares[square_id] = square_rect
                 square_id += 1
 
+                # flip boolean to draw the opposite square
                 start_light = not start_light
 
             start_light = not start_light
     
-    def draw_centered_image(self, image, square_id):
+    # generic drawing function for images centered to a specific square
+    def draw_centered_image(self, image_name: str, square_id: int, size: int, alpha: int = 255):
+        image = images.get(image_name, size, alpha)
         rect = image.get_rect()
         rect.center = self.squares[square_id].center
         self.screen.blit(image, rect)
 
+    # draw the pieces to the board
     def draw_pieces(self):
         for piece in self.board.pieces:
-            piece_image = images.get(piece.image_name, self.square_size * Game.piece_scale)
-            self.draw_centered_image(piece_image, piece.position)
+            self.draw_centered_image(piece.image_name, piece.position, self.piece_size)
 
+    # draw any move markeres if there are any
     def draw_markers(self):
         if self.selected_piece is None: return
         
         for square in self.selected_piece.get_moves():
-            marker_image  = images.get("move_marker", self.square_size * Game.move_marker_scale, 100)
-            self.draw_centered_image(marker_image, square)
+            self.draw_centered_image("move_marker", square, self.move_marker_size, 100)
 
-    def handle_click(self, mouse_pos):
+    # handle each click from the player
+    def handle_click(self, mouse_pos: tuple[int, int]):
 
         # get the clicked square
         clicked_square = None
@@ -102,7 +109,6 @@ class Game:
             self.potential_move_squares = []
             return
         
-        # make the move, clear selected piece and moves
-        if clicked_square in self.selected_piece.get_moves():
-            self.selected_piece.make_move(clicked_square)
+        # reset the selected piece to none if a successful move was made
+        if self.selected_piece.make_move(clicked_square):
             self.selected_piece = None

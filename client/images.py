@@ -5,8 +5,12 @@ import os
 IMAGE_DIRECTORY = "./media"
 
 image_files = os.listdir(IMAGE_DIRECTORY)
-loaded_images = dict([(image_name[0:len(image_name)-4], load(f"{IMAGE_DIRECTORY}/{image_name}")) for image_name in image_files])
+loaded_images = dict([
+                (image_name[0:len(image_name)-4], load(f"{IMAGE_DIRECTORY}/{image_name}"))
+                for image_name in image_files
+                ])
 
+# get an image object at a scaled size from its name
 def get(name, size, alpha=255):
     image = loaded_images[name]
     image.set_alpha(alpha)
