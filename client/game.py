@@ -7,8 +7,9 @@ class Game:
     piece_scale = 0.78
     move_marker_scale = 0.38
     
-    def __init__(self, screen):
+    def __init__(self, screen, perspective: str):
         self.board = Board()
+        self.perspective = perspective
         self.screen = screen
 
         center = self.screen.get_rect().center
@@ -32,7 +33,6 @@ class Game:
         # state variables for interaction
         self.squares: dict[int, pygame.Rect] = dict()
         self.selected_piece = None
-
 
     # draws squares for the grid
     def draw_squares(self):
@@ -75,7 +75,7 @@ class Game:
         for piece in self.board.pieces:
             self.draw_centered_image(piece.image_name, piece.position, self.piece_size)
 
-    # draw any move markeres if there are any
+    # draw any move markers if there are any
     def draw_markers(self):
         if self.selected_piece is None: return
         
@@ -92,23 +92,19 @@ class Game:
                 clicked_square = square_id
 
         # look up if there is a clicked piece by square
-        clicked_piece = None
-        for piece in self.board.pieces:
-            if piece.position == clicked_square:
-                clicked_piece = piece
-
-        # unselect the selected piece if it was clicked again
-        if clicked_piece == self.selected_piece:
+        clicked_piece = self.board.get_piece_at(clicked_square)
+        
+        # click is already the selected piece, unselect it
+        if clicked_piece is self.selected_piece:
             self.selected_piece = None
-
-        elif clicked_piece is not None:
-            self.selected_piece = clicked_piece
-
-        # no selected piece, clear the potential moves
-        if self.selected_piece is None:
-            self.potential_move_squares = []
             return
         
-        # reset the selected piece to none if a successful move was made
-        if self.selected_piece.make_move(clicked_square):
+        # clicked a same-side piece
+        if clicked_piece and clicked_piece.side == self.perspective:
+            self.selected_piece = clicked_piece
+            return
+        
+        # clicked an enemy piece or square while a piece is a selected, attempt move
+        if self.selected_piece and (clicked_piece is None or clicked_piece.side != self.perspective):
+            self.selected_piece.attempt_move(clicked_square)
             self.selected_piece = None

@@ -48,6 +48,29 @@ class Board:
             self.pieces.append(b_piece)
             self.pieces.append(w_piece)
 
+    # a list of all piece positions except for a piece at an excluded position
+    def all_positions(self, exclude_position=0):
+        return [piece.position for piece in self.pieces if piece.position != exclude_position]
+    
+    # a list of all piece positions for a particular side except for a piece at an excluded position
+    def side_positions(self, side: str, exclude_position=0):
+        return [piece.position for piece in self.pieces if piece.side == side and piece.position != exclude_position]
+    
+    # return the specific piece at a given position
+    def get_piece_at(self, position: int):
+        correct_piece = None
+
+        for piece in self.pieces:
+            if piece.position == position:
+                correct_piece = piece
+
+        return correct_piece
+    
+    # removes a piece at a given position from the board
+    def remove_piece_at(self, position: int):
+        self.pieces = [piece for piece in self.pieces if piece.position != position]
+
+
 class Piece:
 
     def __init__(self, side: str, initial_position: int, board: Board):
@@ -55,18 +78,10 @@ class Piece:
         self.side: str = side
         self.board: Board = board
         self.image_name: str = f"{type(self).__name__}_{self.side}".lower()
-
+        self.opposite_side = "black" if self.side == "white" else "black"
 
     # gets a list of valid moves given the current board state for linearly moving pieces
     def get_moves(self) -> list[int]:
-        piece_positions = [piece.position for piece in self.board.pieces if piece.position != self.position]
-        
-        # get the other piece positions from the board
-        same_side_positions = []
-        for piece in self.board.pieces:
-            if piece.side == self.side and piece.position != self.position:
-                same_side_positions.append(piece.position)
-
         all_moves = []
 
         # rotate through each direction
@@ -75,7 +90,7 @@ class Piece:
             squares_traveled = 0
             
             # make sure the move hasn't reached a border or another piece's position
-            while new_move not in border_map[offset] and new_move not in piece_positions:
+            while new_move not in border_map[offset] and new_move not in self.board.all_positions(self.position):
                 squares_traveled += 1
                 if squares_traveled > self.reach:
                     break
@@ -84,19 +99,33 @@ class Piece:
                 new_move += offset
 
                 # add the move if it isn't blocked by a same-side piece
-                if new_move not in same_side_positions:
+                if new_move not in self.board.side_positions(self.side, self.position):
                     all_moves.append(new_move)
 
         return all_moves
     
-    # update the piece position to the move if it's valid
-    def make_move(self, move: int) -> bool:
-        if move in self.get_moves():
-            self.position = move
-            return True
-        
-        return False
+    # returns true or false if a move is a capture of an enemy piece or not
+    def is_capture(self, move: int) -> bool:        
+        opposing_positions = self.board.side_positions(self.opposite_side)
 
+        return move in opposing_positions
+
+    # remove the pieces from the board if it's captured
+    def handle_capture(self, move):
+        if not self.is_capture(move):
+            return
+        
+        self.board.remove_piece_at(move)
+
+
+    # update the piece position to the move if it's valid
+    def attempt_move(self, move: int):        
+        if move not in self.get_moves():
+            return
+
+        self.handle_capture(move)
+        self.position = move
+        
 
 class Rook(Piece):
     

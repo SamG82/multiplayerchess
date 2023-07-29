@@ -10,7 +10,7 @@ pygame.display.set_caption("Chess")
 
 screen.fill("white")
 
-game_board = Game(screen)
+game_board = Game(screen, "white")
 
 run = True
 while run:
