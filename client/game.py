@@ -36,7 +36,9 @@ class Game:
 
     # draws squares for the grid
     def draw_squares(self):
-        square_id = 1
+
+        # start from 64 to "reverse" the perspective of the board for black
+        square_id = 1 if self.perspective == "white" else 64
 
         # boolean to flip when alternating light and dark squares
         start_light = True
@@ -56,7 +58,9 @@ class Game:
                     square_rect = self.screen.blit(images.get("dark_square", self.square_size), (x, y))
 
                 self.squares[square_id] = square_rect
-                square_id += 1
+
+                # count down if black is the perspective
+                square_id += 1 if self.perspective == "white" else -1
 
                 # flip boolean to draw the opposite square
                 start_light = not start_light

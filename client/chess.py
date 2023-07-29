@@ -78,7 +78,7 @@ class Piece:
         self.side: str = side
         self.board: Board = board
         self.image_name: str = f"{type(self).__name__}_{self.side}".lower()
-        self.opposite_side = "black" if self.side == "white" else "black"
+        self.opposite_side = "black" if self.side == "white" else "white"
 
     # gets a list of valid moves given the current board state for linearly moving pieces
     def get_moves(self) -> list[int]:
@@ -119,7 +119,7 @@ class Piece:
 
 
     # update the piece position to the move if it's valid
-    def attempt_move(self, move: int):        
+    def attempt_move(self, move: int):
         if move not in self.get_moves():
             return
 
