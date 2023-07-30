@@ -166,13 +166,14 @@ class Knight(Piece):
 
         return within_range and within_bounds
     
+    # gets a list of valid knight moves
     def get_moves(self) -> list[int]:
         moves = []
         
-        same_side_positions = [piece.position for piece in self.board.pieces if piece.side == self.side]
+        same_side_positions = self.board.side_positions(self.side)
+
         for offset in Knight.offsets:
             move = self.position + offset
-
             if self.valid_knight_move(move) and move not in same_side_positions:
                 moves.append(move)
 
