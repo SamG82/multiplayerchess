@@ -38,15 +38,17 @@ class Board:
 
     def __init__(self):
         self.pieces = []
-        starting_order = [Rook, Knight, Bishop, Queen,
+        backrank_order = [Rook, Knight, Bishop, Queen,
                         King, Bishop, Knight, Rook]
         
-        for i in range(0, 8):
-            b_piece = starting_order[i]("black", i + 1, self)
-            w_piece = starting_order[i]("white", i + 57, self)
+        for i in range(1, 9):
+            b_backrank = backrank_order[i-1]("black", i, self)
+            w_backrank = backrank_order[i-1]("white", i+56, self)
+            
+            b_pawn = Pawn("black", i+8, self)
+            w_pawn = Pawn("white", i+48, self)
 
-            self.pieces.append(b_piece)
-            self.pieces.append(w_piece)
+            self.pieces.extend([b_backrank, w_backrank, b_pawn, w_pawn])
 
     # a list of all piece positions except for a piece at an excluded position
     def all_positions(self, exclude_position=0):
@@ -119,12 +121,13 @@ class Piece:
 
 
     # update the piece position to the move if it's valid
-    def attempt_move(self, move: int):
+    def attempt_move(self, move: int) -> bool:
         if move not in self.get_moves():
-            return
+            return False
 
         self.handle_capture(move)
         self.position = move
+        return True
         
 
 class Rook(Piece):
@@ -178,4 +181,51 @@ class Knight(Piece):
                 moves.append(move)
 
         return moves
+
+class Pawn(Piece):
+    
+    # conditional attack offsets for pawn depending on color
+    attack_offsets = {
+        "white": (-9, -7),
+        "black": (9, 7)
+    }
+
+    # conditional movement offsets for non-attacking moves
+    movement_offsets = {
+        "white": -8,
+        "black": 8
+    }
+
+    def __init__(self, side: str, initial_position: int, board: Board):
+        super().__init__(side, initial_position, board)
+
+        self.offsets = [Pawn.movement_offsets[self.side]]
+        self.reach = 2
+    
+    def attempt_move(self, move: int) -> bool:
+        # reduce the pawn's range if it has moved
+        if super().attempt_move(move):
+            self.reach = 1
+
+    # pawns' offsets need to be dynamically updated depending on the situation
+    def update_offsets(self):
+
+        # allow attacking offsets if there is a piece on that offset
+        for offset in Pawn.attack_offsets[self.side]:
+            if self.is_capture(self.position + offset) and offset not in self.offsets:
+                self.offsets.append(offset)
+            
+            # remove the attacking offset if there isnt a piece there to capture
+            elif not self.is_capture(self.position+offset) and offset in self.offsets:
+                self.offsets = [o for o in self.offsets if o != offset]
+
+        main_offset = Pawn.movement_offsets[self.side]
+
+        # pawns can't attack along their forward main offset, so remove it if there is piece present
+        if self.is_capture(self.position + main_offset):
+            self.offsets = [o for o in self.offsets if o != main_offset]
+
+    def get_moves(self) -> list[int]:
+        self.update_offsets()
+        return super().get_moves()
 
