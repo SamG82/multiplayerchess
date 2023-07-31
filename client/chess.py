@@ -28,10 +28,10 @@ def get_square_coordinates(square: int) -> tuple[int, int]:
 
 # gets the horizontal and vertical distance between two squares
 def get_distance(square1: int, square2: int) -> int:
-    move_x, move_y = get_square_coordinates(square1)
-    position_x, position_y = get_square_coordinates(square2)
+    sq1_x, sq1_y = get_square_coordinates(square1)
+    sq2_x, sq2_y = get_square_coordinates(square2)
 
-    return abs(move_x - position_x) + abs(move_y - position_y)
+    return abs(sq1_x - sq2_x) + abs(sq2_y - sq1_y)
 
 
 class Board:
@@ -68,10 +68,19 @@ class Board:
 
         return correct_piece
     
+    #return a list of pieces on a given side
+    def get_side_pieces(self, side: str):
+        return [piece for piece in self.pieces if piece.side == side]
+
     # removes a piece at a given position from the board
     def remove_piece_at(self, position: int):
         self.pieces = [piece for piece in self.pieces if piece.position != position]
 
+    # returns true or false if the given side is in check
+    def in_check(self, side: str) -> bool:
+        [king] = [piece for piece in self.get_side_pieces(side) if piece.name == f"king_{side}"]
+        return king.is_attacked()
+    
 
 class Piece:
 
@@ -79,7 +88,7 @@ class Piece:
         self.position: int = initial_position
         self.side: str = side
         self.board: Board = board
-        self.image_name: str = f"{type(self).__name__}_{self.side}".lower()
+        self.name: str = f"{type(self).__name__}_{self.side}".lower()
         self.opposite_side = "black" if self.side == "white" else "white"
 
     # gets a list of valid moves given the current board state for linearly moving pieces
@@ -119,7 +128,6 @@ class Piece:
         
         self.board.remove_piece_at(move)
 
-
     # update the piece position to the move if it's valid
     def attempt_move(self, move: int) -> bool:
         if move not in self.get_moves():
@@ -128,8 +136,16 @@ class Piece:
         self.handle_capture(move)
         self.position = move
         return True
-        
 
+    # returns true or false if piece is attacked by another
+    def is_attacked(self) -> bool:
+        opposing_moves = []
+
+        for piece in self.board.get_side_pieces(self.opposite_side):
+            opposing_moves.extend(piece.get_moves())
+
+        return self.position in opposing_moves
+    
 class Rook(Piece):
     
     # horizontal, vertical

@@ -24,7 +24,7 @@ while run:
 
         if event.type == pygame.MOUSEBUTTONUP:
             mouse_pos = pygame.mouse.get_pos()
-            game_board.handle_click(mouse_pos)
+            game_board.handle_click_test(mouse_pos)
     
 
     pygame.display.flip()

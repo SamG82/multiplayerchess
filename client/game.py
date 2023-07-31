@@ -77,7 +77,7 @@ class Game:
     # draw the pieces to the board
     def draw_pieces(self):
         for piece in self.board.pieces:
-            self.draw_centered_image(piece.image_name, piece.position, self.piece_size)
+            self.draw_centered_image(piece.name, piece.position, self.piece_size)
 
     # draw any move markers if there are any
     def draw_markers(self):
@@ -112,3 +112,25 @@ class Game:
         if self.selected_piece and (clicked_piece is None or clicked_piece.side != self.perspective):
             self.selected_piece.attempt_move(clicked_square)
             self.selected_piece = None
+    
+    # able to move both sides just for testing
+    def handle_click_test(self, mouse_pos: tuple[int, int]):
+
+        clicked_square = None
+        for square_id, square in self.squares.items():
+            if square.collidepoint(mouse_pos):
+                clicked_square = square_id
+
+        clicked_piece = self.board.get_piece_at(clicked_square)
+
+        if clicked_piece is self.selected_piece:
+            self.selected_piece = None
+            return
+        
+        if self.selected_piece and (clicked_piece is None or clicked_piece.side != self.selected_piece.side):
+            self.selected_piece.attempt_move(clicked_square)
+            self.selected_piece = None
+            return
+
+        if clicked_piece:
+            self.selected_piece = clicked_piece
