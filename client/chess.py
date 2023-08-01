@@ -1,3 +1,5 @@
+import copy
+
 top_row = list(range(1, 9))
 bottom_row = list(range(57, 65))
 left_column = list(range(1, 58, 8))
@@ -30,8 +32,8 @@ def get_square_coordinates(square: int) -> tuple[int, int]:
 def get_distance(square1: int, square2: int) -> int:
     sq1_x, sq1_y = get_square_coordinates(square1)
     sq2_x, sq2_y = get_square_coordinates(square2)
-
-    return abs(sq1_x - sq2_x) + abs(sq2_y - sq1_y)
+    
+    return abs(sq1_x - sq2_x) + abs(sq1_y - sq2_y)
 
 
 class Board:
@@ -91,8 +93,8 @@ class Piece:
         self.name: str = f"{type(self).__name__}_{self.side}".lower()
         self.opposite_side = "black" if self.side == "white" else "white"
 
-    # gets a list of valid moves given the current board state for linearly moving pieces
-    def get_moves(self) -> list[int]:
+    # gets a list of moves given the current board state, doesn't take check into account
+    def pseudo_legal_moves(self) -> list[int]:
         all_moves = []
 
         # rotate through each direction
@@ -115,26 +117,44 @@ class Piece:
 
         return all_moves
     
+    # makes sure a move wouldn't violate rules of check
+    def move_is_legal(self, move):
+        # create a temporary board and piece copy
+        temp_board = copy.deepcopy(self.board)
+        temp_piece = temp_board.get_piece_at(self.position)
+
+        # remove the piece from the temporary board if its a capture
+        if temp_piece.is_capture(move):
+            temp_board.remove_piece_at(move)
+
+        # move the copied piece
+        temp_piece.position = move
+
+        # if the copied board is still in check, then the move isn't valid
+        if temp_board.in_check(self.side):
+            return False
+        
+        return True
+    
+    def get_legal_moves(self):
+        return [move for move in self.pseudo_legal_moves() if self.move_is_legal(move)]
+    
     # returns true or false if a move is a capture of an enemy piece or not
     def is_capture(self, move: int) -> bool:        
         opposing_positions = self.board.side_positions(self.opposite_side)
 
         return move in opposing_positions
 
-    # remove the pieces from the board if it's captured
-    def handle_capture(self, move):
-        if not self.is_capture(move):
-            return
-        
-        self.board.remove_piece_at(move)
-
-    # update the piece position to the move if it's valid
+    # update the piece position to the move if it's valid, handles capturing
     def attempt_move(self, move: int) -> bool:
-        if move not in self.get_moves():
+        if move not in self.get_legal_moves():
             return False
 
-        self.handle_capture(move)
+        if self.is_capture(move):
+            self.board.remove_piece_at(move)
+
         self.position = move
+
         return True
 
     # returns true or false if piece is attacked by another
@@ -142,7 +162,7 @@ class Piece:
         opposing_moves = []
 
         for piece in self.board.get_side_pieces(self.opposite_side):
-            opposing_moves.extend(piece.get_moves())
+            opposing_moves.extend(piece.pseudo_legal_moves())
 
         return self.position in opposing_moves
     
@@ -186,7 +206,7 @@ class Knight(Piece):
         return within_range and within_bounds
     
     # gets a list of valid knight moves
-    def get_moves(self) -> list[int]:
+    def pseudo_legal_moves(self) -> list[int]:
         moves = []
         
         same_side_positions = self.board.side_positions(self.side)
@@ -221,18 +241,20 @@ class Pawn(Piece):
         if super().attempt_move(move):
             self.has_moved = True
 
-    def get_moves(self) -> list[int]:
+    def pseudo_legal_moves(self) -> list[int]:
         moves = []
 
         # add the diagonal moves if they are attacks
         for offset in Pawn.attack_offsets[self.side]:
-            if self.is_capture(self.position + offset):
-                moves.append(self.position + offset)
+            potential_move = self.position + offset
+            print(get_distance(self.position, potential_move))
+            if self.is_capture(potential_move) and get_distance(self.position, potential_move) == 2:
+                moves.append(potential_move)
 
         shortrange_move = self.position + Pawn.movement_offsets[self.side]
         longrange_move = self.position + Pawn.movement_offsets[self.side] * 2
 
-        if self.is_capture(shortrange_move):
+        if self.board.get_piece_at(shortrange_move):
             return moves
         
         moves.append(shortrange_move)

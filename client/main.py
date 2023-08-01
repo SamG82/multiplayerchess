@@ -10,13 +10,13 @@ pygame.display.set_caption("Chess")
 
 screen.fill("white")
 
-game_board = Game(screen, "black")
+game_board = Game(screen, "white")
 
+game_board.draw_squares()
+game_board.draw_pieces()
 run = True
 while run:
-    game_board.draw_squares()
-    game_board.draw_pieces()
-    game_board.draw_markers()
+    
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -25,7 +25,10 @@ while run:
         if event.type == pygame.MOUSEBUTTONUP:
             mouse_pos = pygame.mouse.get_pos()
             game_board.handle_click_test(mouse_pos)
-    
+            
+            game_board.draw_squares()
+            game_board.draw_pieces()
+            game_board.draw_markers()
 
     pygame.display.flip()
 

@@ -83,7 +83,7 @@ class Game:
     def draw_markers(self):
         if self.selected_piece is None: return
         
-        for square in self.selected_piece.get_moves():
+        for square in self.selected_piece.get_legal_moves():
             self.draw_centered_image("move_marker", square, self.move_marker_size, 100)
 
     # handle each click from the player
