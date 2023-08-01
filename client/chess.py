@@ -214,34 +214,30 @@ class Pawn(Piece):
 
     def __init__(self, side: str, initial_position: int, board: Board):
         super().__init__(side, initial_position, board)
-
-        self.offsets = [Pawn.movement_offsets[self.side]]
-        self.reach = 2
+        self.has_moved = False
     
     def attempt_move(self, move: int) -> bool:
         # reduce the pawn's range if it has moved
         if super().attempt_move(move):
-            self.reach = 1
-
-    # pawns' offsets need to be dynamically updated depending on the situation
-    def update_offsets(self):
-
-        # allow attacking offsets if there is a piece on that offset
-        for offset in Pawn.attack_offsets[self.side]:
-            if self.is_capture(self.position + offset) and offset not in self.offsets:
-                self.offsets.append(offset)
-            
-            # remove the attacking offset if there isnt a piece there to capture
-            elif not self.is_capture(self.position+offset) and offset in self.offsets:
-                self.offsets = [o for o in self.offsets if o != offset]
-
-        main_offset = Pawn.movement_offsets[self.side]
-
-        # pawns can't attack along their forward main offset, so remove it if there is piece present
-        if self.is_capture(self.position + main_offset):
-            self.offsets = [o for o in self.offsets if o != main_offset]
+            self.has_moved = True
 
     def get_moves(self) -> list[int]:
-        self.update_offsets()
-        return super().get_moves()
+        moves = []
 
+        # add the diagonal moves if they are attacks
+        for offset in Pawn.attack_offsets[self.side]:
+            if self.is_capture(self.position + offset):
+                moves.append(self.position + offset)
+
+        shortrange_move = self.position + Pawn.movement_offsets[self.side]
+        longrange_move = self.position + Pawn.movement_offsets[self.side] * 2
+
+        if self.is_capture(shortrange_move):
+            return moves
+        
+        moves.append(shortrange_move)
+
+        if not self.has_moved and not self.board.get_piece_at(longrange_move):
+            moves.append(longrange_move)
+
+        return moves
