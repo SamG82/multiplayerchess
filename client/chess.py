@@ -83,6 +83,19 @@ class Board:
         [king] = [piece for piece in self.get_side_pieces(side) if piece.name == f"king_{side}"]
         return king.is_attacked()
     
+    # returns a side's name if it is checkmated
+    def is_checkmate(self):
+        for side in ["white", "black"]:
+            pieces = self.get_side_pieces(side)
+            legal_moves = []
+
+            for piece in pieces:
+                legal_moves.extend(piece.get_legal_moves())
+
+            if len(legal_moves) == 0:
+                return side
+        
+        return None
 
 class Piece:
 
@@ -136,6 +149,7 @@ class Piece:
         
         return True
     
+    # get all legal moves that could be played
     def get_legal_moves(self):
         return [move for move in self.pseudo_legal_moves() if self.move_is_legal(move)]
     
@@ -205,7 +219,7 @@ class Knight(Piece):
 
         return within_range and within_bounds
     
-    # gets a list of valid knight moves
+    # list of pseudo legal knight moves
     def pseudo_legal_moves(self) -> list[int]:
         moves = []
         
@@ -241,24 +255,27 @@ class Pawn(Piece):
         if super().attempt_move(move):
             self.has_moved = True
 
+    # pseudo legal moves for pawn
     def pseudo_legal_moves(self) -> list[int]:
         moves = []
 
         # add the diagonal moves if they are attacks
         for offset in Pawn.attack_offsets[self.side]:
             potential_move = self.position + offset
-            print(get_distance(self.position, potential_move))
             if self.is_capture(potential_move) and get_distance(self.position, potential_move) == 2:
                 moves.append(potential_move)
 
+        # pawns can either move by 8 or 16 if they haven't moved
         shortrange_move = self.position + Pawn.movement_offsets[self.side]
         longrange_move = self.position + Pawn.movement_offsets[self.side] * 2
 
+        # add the shortrange move if it isnt blocked
         if self.board.get_piece_at(shortrange_move):
             return moves
         
         moves.append(shortrange_move)
 
+        # add the long range move if the pawn is on its starting position and isnt blocked
         if not self.has_moved and not self.board.get_piece_at(longrange_move):
             moves.append(longrange_move)
 
