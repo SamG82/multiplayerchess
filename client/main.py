@@ -1,5 +1,7 @@
 import pygame
 from game import Game
+from drawer import Drawer
+from chess import Board
 
 screen_size = (1200, 800)
 
@@ -10,13 +12,12 @@ pygame.display.set_caption("Chess")
 
 screen.fill("white")
 
-game_board = Game(screen, "white")
+chess_board = Board()
+game_drawer = Drawer(screen, "white")
+game_controller = Game(chess_board, game_drawer)
 
-game_board.draw_squares()
-game_board.draw_pieces()
 run = True
 while run:
-    
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -24,11 +25,7 @@ while run:
 
         if event.type == pygame.MOUSEBUTTONUP:
             mouse_pos = pygame.mouse.get_pos()
-            game_board.handle_click_test(mouse_pos)
-            
-            game_board.draw_squares()
-            game_board.draw_pieces()
-            game_board.draw_markers()
+            game_controller.handle_click_test(mouse_pos)
 
     pygame.display.flip()
 
