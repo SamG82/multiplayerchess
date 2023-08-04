@@ -250,10 +250,34 @@ class Pawn(Piece):
         super().__init__(side, initial_position, board)
         self.has_moved = False
     
-    def attempt_move(self, move: int) -> bool:
-        # reduce the pawn's range if it has moved
-        if super().attempt_move(move):
-            self.has_moved = True
+    # handles the promotion of a pawn that reached the end
+    def promote(self, piece_name):
+        # remove the pawn that just promoted
+        self.board.remove_piece_at(self.position)
+
+        piece_types = [Queen, Bishop, Rook, Knight]
+
+        # mapping of class __names__ to the piece types
+        possible_pieces = {piece.__name__:piece for piece in piece_types}
+
+        # replace the pawn with the new piece based on the option given
+        new_piece = possible_pieces[piece_name](self.side, self.position, self.board)
+        self.board.pieces.append(new_piece)
+
+    # extra move functionality for pawns
+    def attempt_move(self, move: int):
+        if not super().attempt_move(move):
+            return False
+        
+        self.has_moved = True
+
+        row, _ = get_square_coordinates(self.position)
+
+        # return a promotion status for the move if the pawn reached either end
+        if row == 1 or row == 8:
+            return "promotion"
+        
+        return True
 
     # pseudo legal moves for pawn
     def pseudo_legal_moves(self) -> list[int]:

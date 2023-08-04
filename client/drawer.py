@@ -5,7 +5,7 @@ class Drawer:
     size_scale = 0.93
     piece_scale = 0.78
     move_marker_scale = 0.38
-    
+    promotion_prompt_color = (128,) * 3
     def __init__(self, screen, perspective: str):
         self.perspective = perspective
         self.screen = screen
@@ -82,6 +82,37 @@ class Drawer:
         for square in moves:
             self.draw_centered_image("move_marker", square, self.move_marker_size, 100)
 
+    # draw the promotion prompt, returns a list of rects that house the promotion options
+    def draw_promotion_prompt(self):
+        container = pygame.Rect(0, 0, self.square_size * 4, self.square_size)
+        container.center = self.rect.center
+
+        choice_rects = dict()
+        options = ["Queen", "Bishop", "Rook", "Knight"]
+
+        x_values = list(range(container.left, container.right, self.square_size))
+
+        # draw rects across the container
+        for option, x in zip(options, x_values):
+            choice_rect = pygame.Rect(x, container.y, self.square_size, self.square_size)
+
+            image_name = f"{option.lower()}_{self.perspective}"
+            image = images.get(image_name, self.piece_size)
+            
+            image_rect = image.get_rect()
+            image_rect.center = choice_rect.center
+
+            choice_rects[option] = choice_rect
+
+            pygame.draw.rect(self.screen, Drawer.promotion_prompt_color, choice_rect)
+            self.screen.blit(image, image_rect)
+        
+        # for black border
+        pygame.draw.rect(self.screen, "black", container, 4)
+        pygame.display.flip()
+
+        return choice_rects
+
     def get_squares(self):
         return self.squares
 
@@ -91,4 +122,3 @@ class Drawer:
         self.draw_squares(selected)
         self.draw_pieces(pieces)
         self.draw_markers(moves)
-        
