@@ -256,6 +256,21 @@ class King(Piece):
     
     def get_legal_moves(self):
         return super().get_legal_moves() + self.legal_castling_moves()
+    
+    # extra functionality for castling
+    def attempt_move(self, move: int) -> bool:
+        if move in self.legal_castling_moves():
+            rook = self.board.get_piece_at(move
+                                           )
+            new_rook_pos = 1 + self.position if move > self.position else -1 + self.position
+            new_king_pos = 2 + self.position if move > self.position else -2 + self.position
+
+            self.position = new_king_pos
+            rook.position = new_rook_pos
+
+            return True
+        
+        return super().attempt_move(move)
 
 
 class Knight(Piece):
