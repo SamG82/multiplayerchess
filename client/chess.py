@@ -58,7 +58,8 @@ class Board:
     
     # a list of all piece positions for a particular side except for a piece at an excluded position
     def side_positions(self, side: str, exclude_position=0):
-        return [piece.position for piece in self.pieces if piece.side == side and piece.position != exclude_position]
+        return [piece.position for piece in self.pieces
+                if piece.side == side and piece.position != exclude_position]
     
     # return the specific piece at a given position
     def get_piece_at(self, position: int):
@@ -74,13 +75,18 @@ class Board:
     def get_side_pieces(self, side: str):
         return [piece for piece in self.pieces if piece.side == side]
 
+    # returns the king object for the side
+    def get_king(self, side: str):
+        [king] = [piece for piece in self.get_side_pieces(side) if piece.name == f"king_{side}"]
+        return king
+
     # removes a piece at a given position from the board
     def remove_piece_at(self, position: int):
         self.pieces = [piece for piece in self.pieces if piece.position != position]
 
     # returns true or false if the given side is in check
     def in_check(self, side: str) -> bool:
-        [king] = [piece for piece in self.get_side_pieces(side) if piece.name == f"king_{side}"]
+        king = self.get_king(side)
         return king.is_attacked()
     
     # returns a side's name if it is checkmated
@@ -97,6 +103,7 @@ class Board:
         
         return None
 
+
 class Piece:
 
     def __init__(self, side: str, initial_position: int, board: Board):
@@ -105,6 +112,7 @@ class Piece:
         self.board: Board = board
         self.name: str = f"{type(self).__name__}_{self.side}".lower()
         self.opposite_side = "black" if self.side == "white" else "white"
+        self.has_moved = False
 
     # gets a list of moves given the current board state, doesn't take check into account
     def pseudo_legal_moves(self) -> list[int]:
@@ -131,7 +139,7 @@ class Piece:
         return all_moves
     
     # makes sure a move wouldn't violate rules of check
-    def move_is_legal(self, move):
+    def move_is_legal(self, move) -> bool:
         # create a temporary board and piece copy
         temp_board = copy.deepcopy(self.board)
         temp_piece = temp_board.get_piece_at(self.position)
@@ -168,6 +176,7 @@ class Piece:
             self.board.remove_piece_at(move)
 
         self.position = move
+        self.has_moved = True
 
         return True
 
@@ -206,6 +215,47 @@ class King(Piece):
     # moves the same way as queen
     offsets = Queen.offsets
     reach = 1
+
+    # returns a list of rook positions that the king could castle to
+    def legal_castling_moves(self) -> list:
+        if self.has_moved or self.is_attacked():
+            return []
+        
+        castling_moves = []
+        
+        # locate the rooks
+        rooks = [piece for piece in self.board.get_side_pieces(self.side)
+                 if piece.name == f"rook_{self.side}" and not piece.has_moved]
+        rooks.sort(key=lambda rook: rook.position)
+
+        # lines of sight that need to be available for castling
+        kingside_los = {self.position + 1, self.position + 2}
+        queenside_los = set(range(self.position-3, self.position))
+
+        opposing_moves = [piece.pseudo_legal_moves() for piece in self.board.get_side_pieces(self.opposite_side)]
+
+        for rook, los in zip(rooks, (queenside_los, kingside_los)):
+            move_set = set(rook.pseudo_legal_moves())
+            has_los = los.issubset(move_set)
+            
+            if not has_los:
+                continue
+            
+            # make sure the line of sight isn't blocked by an attacking piece's moves
+            blocked = False
+            for move_list in opposing_moves:
+                for move in move_list:
+                    if move in los:
+                        blocked = True
+            
+            if blocked:
+                continue
+
+            castling_moves.append(rook.position)
+        return castling_moves
+    
+    def get_legal_moves(self):
+        return super().get_legal_moves().extend(self.legal_castling_moves())
 
 
 class Knight(Piece):
@@ -262,14 +312,14 @@ class Pawn(Piece):
 
         # replace the pawn with the new piece based on the option given
         new_piece = possible_pieces[piece_name](self.side, self.position, self.board)
+        new_piece.has_moved = True
+
         self.board.pieces.append(new_piece)
 
     # extra move functionality for pawns
     def attempt_move(self, move: int):
         if not super().attempt_move(move):
             return False
-        
-        self.has_moved = True
 
         row, _ = get_square_coordinates(self.position)
 
