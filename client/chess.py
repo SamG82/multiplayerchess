@@ -255,7 +255,7 @@ class King(Piece):
         return castling_moves
     
     def get_legal_moves(self):
-        return super().get_legal_moves().extend(self.legal_castling_moves())
+        return super().get_legal_moves() + self.legal_castling_moves()
 
 
 class Knight(Piece):
@@ -281,6 +281,7 @@ class Knight(Piece):
                 moves.append(move)
 
         return moves
+
 
 class Pawn(Piece):
     

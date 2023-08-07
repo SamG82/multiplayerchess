@@ -41,8 +41,8 @@ class Game:
         if clicked_piece is self.selected_piece:
             self.selected_piece = None
         
-        # attempt a move if there is a selected piece and possible move square was clicked
-        elif self.selected_piece and (clicked_piece is None or clicked_piece.side != self.selected_piece.side):
+        # attempt a move if there is a selected piece
+        elif self.selected_piece :
             move_status = self.selected_piece.attempt_move(clicked_square)
             
             # handle possible promotion of a pawn
