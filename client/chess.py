@@ -224,9 +224,9 @@ class King(Piece):
         castling_moves = []
         
         # locate the rooks
-        rooks = [piece for piece in self.board.get_side_pieces(self.side)
-                 if piece.name == f"rook_{self.side}" and not piece.has_moved]
-        rooks.sort(key=lambda rook: rook.position)
+        queenside_rook = self.board.get_piece_at(self.position - 4)
+        kingside_rook = self.board.get_piece_at(self.position + 3)
+
 
         # lines of sight that need to be available for castling
         kingside_los = {self.position + 1, self.position + 2}
@@ -234,14 +234,18 @@ class King(Piece):
 
         opposing_moves = [piece.pseudo_legal_moves() for piece in self.board.get_side_pieces(self.opposite_side)]
 
-        for rook, los in zip(rooks, (queenside_los, kingside_los)):
+        for rook, los in zip((queenside_rook, kingside_rook), (queenside_los, kingside_los)):
+            if rook.has_moved or rook is None:
+                continue
+            
+            # check if the rook has line of sight to the king
             move_set = set(rook.pseudo_legal_moves())
             has_los = los.issubset(move_set)
             
             if not has_los:
                 continue
             
-            # make sure the line of sight isn't blocked by an attacking piece's moves
+            # make sure the line of sight isn't intercepted by an attacking piece's moves
             blocked = False
             for move_list in opposing_moves:
                 for move in move_list:
@@ -260,8 +264,7 @@ class King(Piece):
     # extra functionality for castling
     def attempt_move(self, move: int) -> bool:
         if move in self.legal_castling_moves():
-            rook = self.board.get_piece_at(move
-                                           )
+            rook = self.board.get_piece_at(move)
             new_rook_pos = 1 + self.position if move > self.position else -1 + self.position
             new_king_pos = 2 + self.position if move > self.position else -2 + self.position
 
