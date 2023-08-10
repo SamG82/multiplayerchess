@@ -315,6 +315,13 @@ class Pawn(Piece):
         "black": 8
     }
 
+    promotion_choices = {
+        "Queen": Queen,
+        "Bishop": Bishop,
+        "Rook": Rook,
+        "Knight": Knight
+    }
+
     def __init__(self, side: str, initial_position: int, board: Board):
         super().__init__(side, initial_position, board)
         self.has_moved = False
@@ -324,13 +331,8 @@ class Pawn(Piece):
         # remove the pawn that just promoted
         self.board.remove_piece_at(self.position)
 
-        piece_types = [Queen, Bishop, Rook, Knight]
-
-        # mapping of class __names__ to the piece types
-        possible_pieces = {piece.__name__:piece for piece in piece_types}
-
         # replace the pawn with the new piece based on the option given
-        new_piece = possible_pieces[piece_name](self.side, self.position, self.board)
+        new_piece = Pawn.promotion_choices[piece_name](self.side, self.position, self.board)
         new_piece.has_moved = True
 
         self.board.pieces.append(new_piece)
