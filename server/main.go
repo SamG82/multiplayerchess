@@ -7,11 +7,6 @@ import (
 
 const port = ":3000"
 
-// network codes
-const (
-	requestMatch byte = 'r'
-)
-
 // global list of all created games
 var allGames GameList
 
@@ -21,9 +16,10 @@ func createGames(gameQueue <-chan net.Conn) {
 		player1 := <-gameQueue
 		player2 := <-gameQueue
 
-		newGame := Game{player1, player2, true}
+		newGame := NewGame(player1, player2)
+		newGame.start()
 
-		allGames.addGame(&newGame)
+		allGames.addGame(NewGame(player1, player2))
 	}
 }
 
@@ -41,7 +37,7 @@ func newConnHandler(conn net.Conn, gameQueue chan<- net.Conn) {
 	message := buffer[:msgLen]
 
 	switch message[0] {
-	case requestMatch:
+	case requestGame:
 		gameQueue <- conn
 	}
 
