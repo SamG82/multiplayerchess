@@ -18,13 +18,13 @@ class Message:
     action: Action
     data: dict
     
-    # returns a Message object created from raw json bytes
+    # returns a message object created from raw json bytes
     @staticmethod
     def from_json_bytes(json_bytes: bytes):
         msg_json = json.loads(json_bytes)
         return Message(msg_json["action"], msg_json["data"])
     
-    # returns the message represents as json bytes
+    # returns the message represented as json bytes
     def to_json_bytes(self):
         payload = {
             "action": self.action,
@@ -42,7 +42,7 @@ class Client:
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # connect the socket and start the keep alive thread
+    # connect the socket
     def connect(self):
         self.socket.connect((self.server_address, self.server_port))
     
@@ -50,19 +50,20 @@ class Client:
     def get_message(self):
         return Message.from_json_bytes(self.socket.recv(BUFFER_SIZE))
     
+    # send a message's json bytes to the socket
     def send_message(self, msg: Message):
         self.socket.send(msg.to_json_bytes())
 
     # sends a start game message to the server
-    # returns the assigned side from the server when an opponent is found
-    def request_game(self) -> str:
+    # stores the assigned side from the server in result_store when done
+    def request_game(self, result_store: dict):
         msg = Message(Action.REQUEST_GAME, {})
         self.socket.send(msg.to_json_bytes())
         
         side = ""
-        has_response = False
+        opponent_found = False
 
-        while not has_response:
+        while not opponent_found:
             response = self.get_message()
 
             # send a ready message if the server is checking 
@@ -72,6 +73,6 @@ class Client:
             # opponent was found and game is starting
             elif response.action == Action.START_GAME:
                 side = response.data["side"]
-                has_response = True
+                opponent_found = True
         
-        return side
+        result_store["side"] = side

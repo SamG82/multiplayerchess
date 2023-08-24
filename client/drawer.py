@@ -1,12 +1,15 @@
 import pygame
 import images
-
-FONT_SIZE = 32
-FONT = pygame.font.Font("freesansbold.ttf", FONT_SIZE)
+from typing import Literal
+pygame.init()
 
 # drawer for menus and prompts
 class MenuDrawer:
-    
+
+    # styles
+    font_size = 32
+    font = pygame.font.Font("freesansbold.ttf", font_size)
+
     def __init__(self, screen):
         self.screen = screen
 
@@ -15,7 +18,7 @@ class MenuDrawer:
         if position is None:
             position = self.screen.get_rect().center
 
-        message = FONT.render(text, True, "black", "white")
+        message = MenuDrawer.font.render(text, True, "black", "white")
         rect = message.get_rect()
 
         rect.center = position

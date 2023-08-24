@@ -17,6 +17,9 @@ class Game:
         # block until a promotion choice is given
         while unanswered:
             for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit()
+                    
                 if event.type == pygame.MOUSEBUTTONUP:
                     mouse_pos = pygame.mouse.get_pos()
 

@@ -12,7 +12,6 @@ const (
 	StartGame      = "sg"
 	RequestingGame = "rg"
 	Ready          = "r"
-	ReadyCheck     = "rc"
 	SendMove       = "sm"
 )
 
