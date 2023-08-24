@@ -1,17 +1,46 @@
 import pygame
 import images
 
-class Drawer:
+FONT_SIZE = 32
+FONT = pygame.font.Font("freesansbold.ttf", FONT_SIZE)
+
+# drawer for menus and prompts
+class MenuDrawer:
+    
+    def __init__(self, screen):
+        self.screen = screen
+
+    # draws a popup with given text, size, and position to the screen
+    def message_popup(self, text: str, width: int, height: int, position: tuple[int, int]=None):
+        if position is None:
+            position = self.screen.get_rect().center
+
+        message = FONT.render(text, True, "black", "white")
+        rect = message.get_rect()
+
+        rect.center = position
+        rect.width = width
+        rect.height = height
+
+        self.screen.blit(message, rect)
+        pygame.display.flip()
+
+
+# drawer for the game-related components
+class ChessDrawer:
+
+    # styles
     size_scale = 0.93
     piece_scale = 0.78
     move_marker_scale = 0.38
     promotion_prompt_color = (128,) * 3
+
     def __init__(self, screen, perspective: str):
         self.perspective = perspective
         self.screen = screen
 
         center = self.screen.get_rect().center
-        size = Drawer.size_scale * self.screen.get_height()
+        size = ChessDrawer.size_scale * self.screen.get_height()
         
         # rect for the entire board
         self.rect = pygame.Rect((0, 0), (size,) * 2)
@@ -22,8 +51,8 @@ class Drawer:
         self.square_columns = range(self.rect.left, self.rect.right, self.square_size)
         self.square_rows = range(self.rect.top, self.rect.bottom, self.square_size)
 
-        self.piece_size = Drawer.piece_scale * self.square_size
-        self.move_marker_size = Drawer.move_marker_scale * self.square_size
+        self.piece_size = ChessDrawer.piece_scale * self.square_size
+        self.move_marker_size = ChessDrawer.move_marker_scale * self.square_size
 
         # draw the rectangle for the entire board
         pygame.draw.rect(self.screen, "black", self.rect, 1)
@@ -104,7 +133,7 @@ class Drawer:
 
             choice_rects[option] = choice_rect
 
-            pygame.draw.rect(self.screen, Drawer.promotion_prompt_color, choice_rect)
+            pygame.draw.rect(self.screen, ChessDrawer.promotion_prompt_color, choice_rect)
             self.screen.blit(image, image_rect)
         
         # for black border
