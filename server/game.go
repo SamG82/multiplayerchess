@@ -3,8 +3,12 @@ package main
 import (
 	"math/rand"
 	"net"
-	"sync"
 	"time"
+)
+
+const (
+	sideWhite = "white"
+	sideBlack = "black"
 )
 
 // random true/false
@@ -13,49 +17,43 @@ func randomBool() bool {
 	randNum := rand.New(randSource)
 
 	// eiher 0 or 1
-	choice := randNum.Intn(2)
+	return randNum.Intn(2) == 1
+}
 
-	return choice == 1
+// return 2 sides in random order
+func getRandomizedSides() (string, string) {
+	if randomBool() {
+		return sideWhite, sideBlack
+	}
+
+	return sideBlack, sideWhite
 }
 
 type Game struct {
 	player1Conn net.Conn
 	player2Conn net.Conn
 
-	player1Side byte
-	player2Side byte
+	player1Side string
+	player2Side string
 
 	player1Turn bool
 }
 
-// returns a new game with default values from connections
-func NewGame(player1Conn net.Conn, player2Conn net.Conn) *Game {
-	return &Game{player1Conn, player2Conn, 0, 0, true}
+// return a new game variable with default values using 2 player connections
+func NewGame(player1Conn net.Conn, player2Conn net.Conn) Game {
+	side1, side2 := getRandomizedSides()
+
+	return Game{
+		player1Conn,
+		player2Conn,
+		side1,
+		side2,
+		true,
+	}
 }
 
-// assign sides and start communicating with clients
+// send start messages and start listening for player messages
 func (g *Game) start() {
-	choice := randomBool()
-	if choice {
-		g.player1Side = sideWhite
-		g.player2Side = sideBlack
-	} else {
-		g.player1Side = sideBlack
-		g.player2Side = sideWhite
-	}
-
 	sendStartMsg(g.player1Conn, g.player1Side)
 	sendStartMsg(g.player2Conn, g.player2Side)
-}
-
-type GameList struct {
-	mu    sync.Mutex
-	games []*Game
-}
-
-func (g *GameList) addGame(newGame *Game) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	g.games = append(g.games, newGame)
 }

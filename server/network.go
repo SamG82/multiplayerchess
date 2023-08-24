@@ -1,25 +1,55 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"net"
 )
 
-// constant network codes
-const (
-	requestGame  byte = 'r' // client requesting a new match
-	startingGame byte = 's' // notifies client of a game starting
+const BufferSize = 128
 
-	sideWhite byte = 'w'
-	sideBlack byte = 'b'
+// actions
+const (
+	StartGame      = "sg"
+	RequestingGame = "rg"
+	Ready          = "r"
+	ReadyCheck     = "rc"
+	SendMove       = "sm"
 )
 
-// sends a start code along with the players assigned side to the client
-func sendStartMsg(conn net.Conn, side byte) {
-	msg := []byte{startingGame, side}
+type Message struct {
+	Action string                 `json:"action"`
+	Data   map[string]interface{} `json:"data"`
+}
 
-	_, err := conn.Write(msg)
-	if err != nil {
-		fmt.Println(err)
-	}
+// returns json bytes for a Message
+func messageJSON(m *Message) []byte {
+	msgJSON, _ := json.Marshal(m)
+	return msgJSON
+}
+
+// sends a start message along with the players assigned side to the client
+func sendStartMsg(conn net.Conn, side string) {
+	msg := Message{Action: StartGame, Data: map[string]interface{}{"side": side}}
+	conn.Write(messageJSON(&msg))
+}
+
+// wrapper for making a buffer and reading a message from connection
+func readFromConn(conn net.Conn) (Message, error) {
+	buffer := make([]byte, BufferSize)
+	len, err := conn.Read(buffer)
+
+	trimmedMsg := buffer[:len]
+
+	var response Message
+	json.Unmarshal(trimmedMsg, &response)
+
+	return response, err
+}
+
+func connIsAlive(conn net.Conn) bool {
+	msg := Message{Action: Ready, Data: map[string]interface{}{}}
+	conn.Write(messageJSON(&msg))
+
+	response, _ := readFromConn(conn)
+	return response.Action == Ready
 }

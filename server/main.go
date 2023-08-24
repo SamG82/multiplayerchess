@@ -7,37 +7,35 @@ import (
 
 const port = ":3000"
 
-// global list of all created games
-var allGames GameList
-
-// create new game variables from the gameQueu
-func createGames(gameQueue <-chan net.Conn) {
+// create new game variables from the playerQueue
+func createGames(playerQueue chan net.Conn) {
 	for {
-		player1 := <-gameQueue
-		player2 := <-gameQueue
+		player1 := <-playerQueue
+		player2 := <-playerQueue
 
-		newGame := NewGame(player1, player2)
-		newGame.start()
+		// handle the first player disconnecting while in queue
+		if !connIsAlive(player1) {
+			go func() {
+				playerQueue <- player2
+			}()
+			continue
+		}
 
-		allGames.addGame(NewGame(player1, player2))
+		ng := NewGame(player1, player2)
+		go ng.start()
 	}
 }
 
 // handles a new client connection to add them to the queue
 func newConnHandler(conn net.Conn, gameQueue chan<- net.Conn) {
-	buffer := make([]byte, 16)
-
-	msgLen, err := conn.Read(buffer)
-
+	message, err := readFromConn(conn)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	message := buffer[:msgLen]
-
-	switch message[0] {
-	case requestGame:
+	switch message.Action {
+	case RequestingGame:
 		gameQueue <- conn
 	}
 
@@ -52,8 +50,8 @@ func main() {
 
 	defer listener.Close()
 
-	gameQueue := make(chan net.Conn)
-	go createGames(gameQueue)
+	playerQueue := make(chan net.Conn)
+	go createGames(playerQueue)
 
 	// listen for new connections
 	for {
@@ -63,7 +61,7 @@ func main() {
 			continue
 		}
 
-		go newConnHandler(connection, gameQueue)
+		go newConnHandler(connection, playerQueue)
 	}
 
 }
