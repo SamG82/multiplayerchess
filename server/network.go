@@ -10,12 +10,13 @@ const BufferSize = 128
 
 // actions
 const (
-	StartGame      = "sg"
-	RequestingGame = "rg"
-	Ready          = "r"
-	SendMove       = "sm"
+	StartGame      = "sg" // start code to send to clients when 2 players were found
+	RequestingGame = "rg" // client connected and is requesting a game
+	Ready          = "r"  // ready check for clients
+	SendMove       = "sm" // sending a move
 )
 
+// represents a message between client and server
 type Message struct {
 	Action string                 `json:"action"`
 	From   net.Conn               `json:"-"`
@@ -34,6 +35,7 @@ func sendStart(playerConn net.Conn, side side) {
 	playerConn.Write(messageJSON(&msg))
 }
 
+// send a message to the connection
 func sendMessage(playerConn net.Conn, msg Message) {
 	playerConn.Write(messageJSON(&msg))
 }
@@ -52,6 +54,7 @@ func readFromConn(conn net.Conn) (Message, error) {
 	return response, err
 }
 
+// writes a ready message to the connection and expects one back
 func connIsAlive(conn net.Conn) bool {
 	msg := Message{Action: Ready, Data: map[string]interface{}{}}
 	conn.Write(messageJSON(&msg))

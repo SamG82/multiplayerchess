@@ -1,6 +1,5 @@
 import pygame
 import images
-from typing import Literal
 pygame.init()
 
 # drawer for menus and prompts

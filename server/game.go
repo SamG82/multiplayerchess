@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"net"
 	"time"
@@ -71,13 +70,10 @@ func (g *Game) run() {
 				continue
 			}
 
-			fmt.Println(msg)
-
 			oppSide, oppConn := getOpponent(msg.From, *g)
 			sendMessage(oppConn, msg)
 
 			g.turn = oppSide
-
 		}
 	}
 }

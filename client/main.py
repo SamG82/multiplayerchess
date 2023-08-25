@@ -1,5 +1,4 @@
 import pygame
-import threading
 
 import drawer
 from game import Game
@@ -21,11 +20,8 @@ def main():
 
     client = Client("127.0.0.1", 3000)
     client.connect()
+    game_req = client.request_game()
 
-    # start queueing for a game
-    game_req = threading.Thread(target=client.request_game, daemon=True)
-    game_req.start()
-    
     # wait for the thread
     waiting = True
     while waiting:
@@ -50,7 +46,7 @@ def main():
             if event.type == pygame.MOUSEBUTTONUP:
                 mouse_pos = pygame.mouse.get_pos()
                 game_controller.handle_click(mouse_pos)
-
+            
         pygame.display.flip()
 
         clock.tick(60)

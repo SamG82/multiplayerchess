@@ -1,10 +1,15 @@
 import socket
 import json
+import queue
+
 from enum import Enum
 from dataclasses import dataclass
 
+from thread import threaded
+
 BUFFER_SIZE = 128
 ENCODING = "utf-8"
+
 
 # possible actions to communicate with the server
 class Action(str, Enum):
@@ -12,6 +17,7 @@ class Action(str, Enum):
     REQUEST_GAME = "rg"
     READY = "r"
     SEND_MOVE = "sm"
+
 
 # represents a message sent between client and server
 @dataclass
@@ -35,12 +41,14 @@ class Message:
         json_str = json.dumps(payload)
         return bytes(json_str, ENCODING)
 
+
 class Client:
 
     def __init__(self, server_address: str, server_port: str):
         self.server_address = server_address
         self.server_port = server_port
 
+        self.opponent_moves = queue.Queue()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # connect the socket
@@ -57,6 +65,7 @@ class Client:
 
     # sends a start game message to the server
     # side assigned by the server will be set to self.side
+    @threaded
     def request_game(self):
         msg = Message(Action.REQUEST_GAME, {})
         self.send_message(msg)
@@ -73,9 +82,29 @@ class Client:
             # opponent was found and game is starting
             elif response.action == Action.START_GAME:
                 self.side = response.data["side"]
+                self.turn = True if self.side == "white" else False
+
                 opponent_found = True
 
+    # listen for an incoming move from the server
+    # puts moves in the oppent_moves queue
+    @threaded
+    def get_opponent_moves(self):
+        while True:
+            response = self.get_message()
+            if response.action != Action.SEND_MOVE:
+                continue
+            
+            self.opponent_moves.put(response.data)
+            self.turn = True
+    
     # send a move message
-    def send_move(self, move: int):
-        msg = Message(Action.SEND_MOVE, {"move": move })
+    @threaded
+    def send_move(self, to: int, piece_pos: int, promo_choice=None):
+        msg = Message(Action.SEND_MOVE, {"to": to,
+                                         "from":piece_pos,
+                                         "promo_choice": promo_choice
+                                         })
+
+        self.turn = False
         self.send_message(msg)
