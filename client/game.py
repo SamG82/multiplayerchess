@@ -27,14 +27,8 @@ class Game:
             if move_data["promo_choice"]:
                 moved_piece.promote(move_data["promo_choice"])
 
-            draw_data = (
-                self.selected_piece.position if self.selected_piece else None,
-                self.board.pieces,
-                self.selected_piece.get_legal_moves() if self.selected_piece else None,
-            )
-
-            # refresh the screen with the draw data
-            self.drawer.refresh(draw_data)
+            # refresh the pieces 
+            self.drawer.draw_pieces(self.board.pieces)
 
     # show a prompt to the user and handle the promotion of a pawn
     def handle_promotion(self, piece):
