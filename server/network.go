@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 )
 
@@ -17,6 +18,7 @@ const (
 
 type Message struct {
 	Action string                 `json:"action"`
+	From   net.Conn               `json:"-"`
 	Data   map[string]interface{} `json:"data"`
 }
 
@@ -26,10 +28,14 @@ func messageJSON(m *Message) []byte {
 	return msgJSON
 }
 
-// sends a start message along with the players assigned side to the client
-func sendStartMsg(conn net.Conn, side string) {
+// sends a start message  along with the players assigned side to the client
+func sendStart(playerConn net.Conn, side side) {
 	msg := Message{Action: StartGame, Data: map[string]interface{}{"side": side}}
-	conn.Write(messageJSON(&msg))
+	playerConn.Write(messageJSON(&msg))
+}
+
+func sendMessage(playerConn net.Conn, msg Message) {
+	playerConn.Write(messageJSON(&msg))
 }
 
 // wrapper for making a buffer and reading a message from connection
@@ -41,6 +47,7 @@ func readFromConn(conn net.Conn) (Message, error) {
 
 	var response Message
 	json.Unmarshal(trimmedMsg, &response)
+	response.From = conn
 
 	return response, err
 }
@@ -51,4 +58,15 @@ func connIsAlive(conn net.Conn) bool {
 
 	response, _ := readFromConn(conn)
 	return response.Action == Ready
+}
+
+// continously gets messages from a connection and puts them in msgChan
+func getMessages(playerConn net.Conn, msgChan chan<- Message) {
+	for {
+		msg, err := readFromConn(playerConn)
+		if err != nil {
+			fmt.Println(err)
+		}
+		msgChan <- msg
+	}
 }

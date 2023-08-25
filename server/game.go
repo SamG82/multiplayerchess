@@ -1,15 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"net"
 	"time"
 )
 
 const (
-	sideWhite = "white"
-	sideBlack = "black"
+	SideWhite = "white"
+	SideBlack = "black"
 )
+
+type side string
 
 // random true/false
 func randomBool() bool {
@@ -21,39 +24,60 @@ func randomBool() bool {
 }
 
 // return 2 sides in random order
-func getRandomizedSides() (string, string) {
+func getRandomizedSides() (side, side) {
 	if randomBool() {
-		return sideWhite, sideBlack
+		return SideWhite, SideBlack
 	}
 
-	return sideBlack, sideWhite
+	return SideBlack, SideWhite
 }
 
 type Game struct {
-	player1Conn net.Conn
-	player2Conn net.Conn
-
-	player1Side string
-	player2Side string
-
-	player1Turn bool
+	players map[side]net.Conn
+	turn    side
 }
 
 // return a new game variable with default values using 2 player connections
 func NewGame(player1Conn net.Conn, player2Conn net.Conn) Game {
 	side1, side2 := getRandomizedSides()
-
 	return Game{
-		player1Conn,
-		player2Conn,
-		side1,
-		side2,
-		true,
+		players: map[side]net.Conn{side1: player1Conn, side2: player2Conn},
+		turn:    SideWhite,
 	}
 }
 
-// send start messages and start listening for player messages
-func (g *Game) start() {
-	sendStartMsg(g.player1Conn, g.player1Side)
-	sendStartMsg(g.player2Conn, g.player2Side)
+func getOpponent(playerConn net.Conn, g Game) (side, net.Conn) {
+	for side, conn := range g.players {
+		if conn != playerConn {
+			return side, conn
+		}
+	}
+
+	return "", nil
+}
+
+// send start messages and start handling player messages
+func (g *Game) run() {
+	msgChan := make(chan Message)
+	for side, conn := range g.players {
+		sendStart(conn, side)
+		go getMessages(conn, msgChan)
+	}
+
+	for msg := range msgChan {
+		switch msg.Action {
+		case SendMove:
+			if msg.From != g.players[g.turn] {
+				continue
+			}
+
+			fmt.Println(msg)
+
+			oppSide, oppConn := getOpponent(msg.From, *g)
+			sendMessage(oppConn, msg)
+
+			g.turn = oppSide
+
+		}
+	}
 }

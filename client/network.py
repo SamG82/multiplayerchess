@@ -11,6 +11,7 @@ class Action(str, Enum):
     START_GAME = "sg"
     REQUEST_GAME = "rg"
     READY = "r"
+    SEND_MOVE = "sm"
 
 # represents a message sent between client and server
 @dataclass
@@ -55,12 +56,11 @@ class Client:
         self.socket.send(msg.to_json_bytes())
 
     # sends a start game message to the server
-    # stores the assigned side from the server in result_store when done
-    def request_game(self, result_store: dict):
+    # side assigned by the server will be set to self.side
+    def request_game(self):
         msg = Message(Action.REQUEST_GAME, {})
-        self.socket.send(msg.to_json_bytes())
+        self.send_message(msg)
         
-        side = ""
         opponent_found = False
 
         while not opponent_found:
@@ -72,7 +72,10 @@ class Client:
 
             # opponent was found and game is starting
             elif response.action == Action.START_GAME:
-                side = response.data["side"]
+                self.side = response.data["side"]
                 opponent_found = True
-        
-        result_store["side"] = side
+
+    # send a move message
+    def send_move(self, move: int):
+        msg = Message(Action.SEND_MOVE, {"move": move })
+        self.send_message(msg)

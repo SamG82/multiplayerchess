@@ -1,11 +1,14 @@
 import pygame
 
+# manages game state and user clicks
 class Game:
-    def __init__(self, board, drawer):
+
+    def __init__(self, board, drawer, client):
         self.board = board
         self.drawer = drawer
-        self.selected_piece = None
+        self.client = client
 
+        self.selected_piece = None
         self.drawer.refresh((None, self.board.pieces, None))
 
     # show a prompt to the user and handle the promotion of a pawn
@@ -19,7 +22,7 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()
-                    
+
                 if event.type == pygame.MOUSEBUTTONUP:
                     mouse_pos = pygame.mouse.get_pos()
 
@@ -29,30 +32,35 @@ class Game:
 
                             # exit the prompt
                             unanswered = False
-
-    # able to move both sides just for testing
-    def handle_click_test(self, mouse_pos: tuple[int, int]):
+    
+    def handle_click(self, mouse_pos: tuple[int, int]):
         
+        # search for the clicked square
         clicked_square = None
         for square_id, square in self.drawer.squares.items():
             if square.collidepoint(mouse_pos):
                 clicked_square = square_id
 
         clicked_piece = self.board.get_piece_at(clicked_square)
-
+        
+        # opponent side piece was clicked
+        if clicked_piece is not None and clicked_piece.side != self.drawer.perspective:
+            return
+        
         # unselect the selected piece if it was clicked again
         if clicked_piece is self.selected_piece:
             self.selected_piece = None
         
         # attempt a move if there is a selected piece
-        elif self.selected_piece :
+        elif self.selected_piece:
             move_status = self.selected_piece.attempt_move(clicked_square)
-            
-            # handle possible promotion of a pawn
+
             if move_status == "promotion":
                self.handle_promotion(self.selected_piece)
 
-            # unselect the piece after a move has been attempted
+            if move_status:
+                self.client.send_move(clicked_square)
+                
             self.selected_piece = None
 
         elif clicked_piece:
@@ -64,5 +72,5 @@ class Game:
             self.selected_piece.get_legal_moves() if self.selected_piece else None,
         )
 
-        # refresh the screen
+        # refresh the screen with the draw data
         self.drawer.refresh(draw_data)

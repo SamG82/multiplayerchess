@@ -19,12 +19,11 @@ def main():
     menu = drawer.MenuDrawer(screen)
     menu.message_popup("Waiting for opponent", 400, 250)
 
-    c = Client("127.0.0.1", 3000)
-    c.connect()
-    result_store = {}
+    client = Client("127.0.0.1", 3000)
+    client.connect()
 
     # start queueing for a game
-    game_req = threading.Thread(target=c.request_game, args=(result_store,), daemon=True)
+    game_req = threading.Thread(target=client.request_game, daemon=True)
     game_req.start()
     
     # wait for the thread
@@ -36,10 +35,10 @@ def main():
 
         if not game_req.is_alive():
             waiting = False
-
+    
     chess_board = Board()
-    game_drawer = drawer.ChessDrawer(screen, result_store["side"])
-    game_controller = Game(chess_board, game_drawer)
+    game_drawer = drawer.ChessDrawer(screen, client.side)
+    game_controller = Game(chess_board, game_drawer, client)
 
     # start the main game loop
     run = True
@@ -50,7 +49,7 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONUP:
                 mouse_pos = pygame.mouse.get_pos()
-                game_controller.handle_click_test(mouse_pos)
+                game_controller.handle_click(mouse_pos)
 
         pygame.display.flip()
 

@@ -22,7 +22,7 @@ func createGames(playerQueue chan net.Conn) {
 		}
 
 		ng := NewGame(player1, player2)
-		go ng.start()
+		go ng.run()
 	}
 }
 
