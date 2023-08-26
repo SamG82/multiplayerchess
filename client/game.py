@@ -1,5 +1,6 @@
 import pygame
 from thread import threaded
+from time import sleep as s
 
 # manages game state and user clicks
 class Game:
@@ -27,8 +28,13 @@ class Game:
             if move_data["promo_choice"]:
                 moved_piece.promote(move_data["promo_choice"])
 
-            # refresh the pieces 
-            self.drawer.draw_pieces(self.board.pieces)
+            draw_data = (
+                None,
+                self.board.pieces,
+                None,
+            )
+
+            self.drawer.refresh(draw_data)
 
     # show a prompt to the user and handle the promotion of a pawn
     def handle_promotion(self, piece):
@@ -60,12 +66,16 @@ class Game:
     def handle_click(self, mouse_pos: tuple[int, int]):
         if not self.client.turn:
             return
+        
         # search for the clicked square
         clicked_square = None
         for square_id, square in self.drawer.squares.items():
             if square.collidepoint(mouse_pos):
                 clicked_square = square_id
 
+        if not clicked_square:
+            return
+    
         clicked_piece = self.board.get_piece_at(clicked_square)
         
         # opponent side piece was clicked with no selected piece
@@ -86,7 +96,7 @@ class Game:
                promo_data = self.handle_promotion(self.selected_piece)
 
             if move_status:
-                self.client.send_move(self.selected_piece.position, previous_pos, promo_data)
+                self.client.send_move(move_status, previous_pos, promo_data)
 
             self.selected_piece = None
 

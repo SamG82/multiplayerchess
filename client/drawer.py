@@ -2,6 +2,8 @@ import pygame
 import images
 pygame.init()
 
+from time import perf_counter
+
 # drawer for menus and prompts
 class MenuDrawer:
 

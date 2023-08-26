@@ -178,7 +178,7 @@ class Piece:
         self.position = move
         self.has_moved = True
 
-        return True
+        return move
 
     # returns true or false if piece is attacked by another
     def is_attacked(self) -> bool:
@@ -261,17 +261,20 @@ class King(Piece):
     def get_legal_moves(self):
         return super().get_legal_moves() + self.legal_castling_moves()
     
+    def castle(self, move: int):
+        rook = self.board.get_piece_at(move)
+        new_rook_pos = 1 + self.position if move > self.position else -1 + self.position
+        new_king_pos = 2 + self.position if move > self.position else -2 + self.position
+
+        self.position = new_king_pos
+        rook.position = new_rook_pos
+
+
     # extra functionality for castling
     def attempt_move(self, move: int) -> bool:
         if move in self.legal_castling_moves():
-            rook = self.board.get_piece_at(move)
-            new_rook_pos = 1 + self.position if move > self.position else -1 + self.position
-            new_king_pos = 2 + self.position if move > self.position else -2 + self.position
-
-            self.position = new_king_pos
-            rook.position = new_rook_pos
-
-            return True
+            self.castle(move)
+            return move
         
         return super().attempt_move(move)
 
@@ -348,7 +351,7 @@ class Pawn(Piece):
         if row == 1 or row == 8:
             return "promotion"
         
-        return True
+        return move
 
     # pseudo legal moves for pawn
     def pseudo_legal_moves(self) -> list[int]:
