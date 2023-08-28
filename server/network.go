@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+
+	"github.com/notnil/chess"
 )
 
-const BufferSize = 128
+const BufferSize = 1024
 
 // actions
 const (
@@ -14,6 +16,7 @@ const (
 	RequestingGame = "rg" // client connected and is requesting a game
 	Ready          = "r"  // ready check for clients
 	SendMove       = "sm" // sending a move
+	UpdateBoard    = "ub" // sending a new updated board state
 )
 
 // represents a message between client and server
@@ -29,15 +32,34 @@ func messageJSON(m *Message) []byte {
 	return msgJSON
 }
 
-// sends a start message  along with the players assigned side to the client
-func sendStart(playerConn net.Conn, side side) {
-	msg := Message{Action: StartGame, Data: map[string]interface{}{"side": side}}
+// converts chess.board's squaremap to sendable data
+func boardData(b chess.Board) map[string]interface{} {
+	boardData := make(map[string]interface{})
+
+	for square, piece := range b.SquareMap() {
+		boardData[square.String()] = piece.Color().String() + piece.Type().String()
+	}
+
+	return boardData
+}
+
+// sends a start message with initial board state and players assigned side to the player
+func sendStart(playerConn net.Conn, color chess.Color, initialBoard chess.Board) {
+	data := map[string]interface{}{
+		"color": color.String(),
+		"board": boardData(initialBoard),
+	}
+
+	msg := Message{Action: StartGame, Data: data}
 	playerConn.Write(messageJSON(&msg))
 }
 
-// send a message to the connection
-func sendMessage(playerConn net.Conn, msg Message) {
-	playerConn.Write(messageJSON(&msg))
+// send a new board state to both players
+func sendBoard(player1 net.Conn, player2 net.Conn, board chess.Board) {
+
+	msg := Message{Action: UpdateBoard, Data: boardData(board)}
+	player1.Write(messageJSON(&msg))
+	player2.Write(messageJSON(&msg))
 }
 
 // wrapper for making a buffer and reading a message from connection

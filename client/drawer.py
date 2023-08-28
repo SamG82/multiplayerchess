@@ -2,7 +2,7 @@ import pygame
 import images
 pygame.init()
 
-from time import perf_counter
+from typing import Literal
 
 # drawer for menus and prompts
 class MenuDrawer:
@@ -31,7 +31,7 @@ class MenuDrawer:
 
 
 # drawer for the game-related components
-class ChessDrawer:
+class BoardDrawer:
 
     # styles
     size_scale = 0.93
@@ -39,12 +39,20 @@ class ChessDrawer:
     move_marker_scale = 0.38
     promotion_prompt_color = (128,) * 3
 
-    def __init__(self, screen, perspective: str):
+    square_files = 'abcdefgh'
+    square_ranks = [i for i in range(1, 9)]
+
+    square_starts = {
+        "w": (-7, 0),
+        "b": (0, -7)
+    }
+
+    def __init__(self, screen, perspective: Literal["w", "b"]):
         self.perspective = perspective
         self.screen = screen
 
         center = self.screen.get_rect().center
-        size = ChessDrawer.size_scale * self.screen.get_height()
+        size = BoardDrawer.size_scale * self.screen.get_height()
         
         # rect for the entire board
         self.rect = pygame.Rect((0, 0), (size,) * 2)
@@ -55,29 +63,33 @@ class ChessDrawer:
         self.square_columns = range(self.rect.left, self.rect.right, self.square_size)
         self.square_rows = range(self.rect.top, self.rect.bottom, self.square_size)
 
-        self.piece_size = ChessDrawer.piece_scale * self.square_size
-        self.move_marker_size = ChessDrawer.move_marker_scale * self.square_size
+        self.piece_size = BoardDrawer.piece_scale * self.square_size
+        self.move_marker_size = BoardDrawer.move_marker_scale * self.square_size
 
         # draw the rectangle for the entire board
         pygame.draw.rect(self.screen, "black", self.rect, 1)
 
-        self.squares: dict[int, pygame.Rect] = dict()
+        self.squares: dict[str, pygame.Rect] = dict()
+        self.pieces: dict[str, pygame.Rect] = dict()
 
-    # draws squares for the grid
-    def draw_squares(self, selected_square):
+        rank_start, file_start = BoardDrawer.square_starts[self.perspective]
+        self.rank_start = rank_start
+        self.file_start = file_start
 
-        # start from 64 to "reverse" the perspective of the board for black
-        square_id = 1 if self.perspective == "white" else 64
+        self.selected_square = None
+        self.piece_positions = {}
 
-        # boolean to flip when alternating light and dark squares
+    # draws the board
+    def draw_board(self):
         start_light = True
 
         # draw the grid
-        for y in self.square_rows:
-            for x in self.square_columns:
+        for rank, y in enumerate(self.square_rows, start=self.rank_start):
+            for file, x in enumerate(self.square_columns, start=self.file_start):
+                square_name = f"{BoardDrawer.square_files[abs(file)]}{BoardDrawer.square_ranks[abs(rank)]}"
                 square_rect = None
 
-                if selected_square is not None and square_id == selected_square:
+                if self.selected_square is not None and square_name == self.selected_square:
                     square_rect = self.screen.blit(images.get("yellow_square", self.square_size), (x, y))
 
                 elif start_light:
@@ -85,35 +97,22 @@ class ChessDrawer:
 
                 else:
                     square_rect = self.screen.blit(images.get("dark_square", self.square_size), (x, y))
+                
+                try:
+                    piece_name = self.piece_positions[square_name]
+                    piece_img = images.get(piece_name, self.piece_size)
+                    piece_rect = piece_img.get_rect()
+                    piece_rect.center = square_rect.center
+                    self.screen.blit(piece_img, piece_rect)
+                    self.pieces[square_name] = piece_rect
 
-                self.squares[square_id] = square_rect
+                except KeyError:
+                    pass
 
-                # count down if black is the perspective
-                square_id += 1 if self.perspective == "white" else -1
+                self.squares[square_name] = square_rect
 
-                # flip boolean to draw the opposite square
                 start_light = not start_light
-
             start_light = not start_light
-    
-    # generic drawing function for images centered to a specific square
-    def draw_centered_image(self, image_name: str, square_id: int, size: int, alpha: int = 255):
-        image = images.get(image_name, size, alpha)
-        rect = image.get_rect()
-        rect.center = self.squares[square_id].center
-        self.screen.blit(image, rect)
-
-    # draw the pieces to the board
-    def draw_pieces(self, pieces):
-        for piece in pieces:
-            self.draw_centered_image(piece.name, piece.position, self.piece_size)
-
-    # draw any move markers
-    def draw_markers(self, moves):
-        if moves is None: return
-        
-        for square in moves:
-            self.draw_centered_image("move_marker", square, self.move_marker_size, 100)
 
     # draw the promotion prompt, returns a list of rects that house the promotion options
     def draw_promotion_prompt(self):
@@ -121,7 +120,7 @@ class ChessDrawer:
         container.center = self.rect.center
 
         choice_rects = dict()
-        options = ["Queen", "Bishop", "Rook", "Knight"]
+        options = ['q', 'r', 'b', 'n']
 
         x_values = list(range(container.left, container.right, self.square_size))
 
@@ -129,7 +128,7 @@ class ChessDrawer:
         for option, x in zip(options, x_values):
             choice_rect = pygame.Rect(x, container.y, self.square_size, self.square_size)
 
-            image_name = f"{option.lower()}_{self.perspective}"
+            image_name = f"{self.perspective}{option}"
             image = images.get(image_name, self.piece_size)
             
             image_rect = image.get_rect()
@@ -137,7 +136,7 @@ class ChessDrawer:
 
             choice_rects[option] = choice_rect
 
-            pygame.draw.rect(self.screen, ChessDrawer.promotion_prompt_color, choice_rect)
+            pygame.draw.rect(self.screen, BoardDrawer.promotion_prompt_color, choice_rect)
             self.screen.blit(image, image_rect)
         
         # for black border
@@ -145,13 +144,3 @@ class ChessDrawer:
         pygame.display.flip()
 
         return choice_rects
-
-    def get_squares(self):
-        return self.squares
-
-    def refresh(self, draw_data: tuple):
-        selected, pieces, moves = draw_data
-
-        self.draw_squares(selected)
-        self.draw_pieces(pieces)
-        self.draw_markers(moves)

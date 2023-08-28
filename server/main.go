@@ -21,7 +21,7 @@ func createGames(playerQueue chan net.Conn) {
 			continue
 		}
 
-		ng := NewGame(player1, player2)
+		ng := NewGameLobby(player1, player2)
 		go ng.run()
 	}
 }

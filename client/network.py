@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from thread import threaded
 
-BUFFER_SIZE = 128
+BUFFER_SIZE = 1024
 ENCODING = "utf-8"
 
 
@@ -17,6 +17,7 @@ class Action(str, Enum):
     REQUEST_GAME = "rg"
     READY = "r"
     SEND_MOVE = "sm"
+    UPDATE_BOARD = "ub"
 
 
 # represents a message sent between client and server
@@ -48,8 +49,10 @@ class Client:
         self.server_address = server_address
         self.server_port = server_port
 
-        self.opponent_moves = queue.Queue()
+        self.board_updates = queue.Queue()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        self.color = None
 
     # connect the socket
     def connect(self):
@@ -57,7 +60,8 @@ class Client:
     
     # read one message from the socket
     def get_message(self):
-        return Message.from_json_bytes(self.socket.recv(BUFFER_SIZE))
+        resp_bytes = self.socket.recv(BUFFER_SIZE)
+        return Message.from_json_bytes(resp_bytes)
     
     # send a message's json bytes to the socket
     def send_message(self, msg: Message):
@@ -81,30 +85,20 @@ class Client:
 
             # opponent was found and game is starting
             elif response.action == Action.START_GAME:
-                self.side = response.data["side"]
-                self.turn = True if self.side == "white" else False
-
+                self.side = response.data["color"]
+                self.board_updates.put(response.data["board"])
                 opponent_found = True
 
-    # listen for an incoming move from the server
-    # puts moves in the oppent_moves queue
+    # listen for incoming communication
     @threaded
-    def get_opponent_moves(self):
+    def listen(self):
         while True:
-            response = self.get_message()
-            if response.action != Action.SEND_MOVE:
-                continue
-            
-            self.opponent_moves.put(response.data)
-            self.turn = True
-    
+            msg = Message.from_json_bytes(self.socket.recv(BUFFER_SIZE))
+            if msg.action == Action.UPDATE_BOARD:
+                self.board_updates.put(msg.data)
+
     # send a move message
     @threaded
-    def send_move(self, to: int, piece_pos: int, promo_choice=None):
-        msg = Message(Action.SEND_MOVE, {"to": to,
-                                         "from":piece_pos,
-                                         "promo_choice": promo_choice
-                                         })
-
-        self.turn = False
+    def send_move(self, move: str, promo_choice=None):
+        msg = Message(Action.SEND_MOVE, {"move": move, "promo_choice": promo_choice})
         self.send_message(msg)

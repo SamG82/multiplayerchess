@@ -4,14 +4,9 @@ import (
 	"math/rand"
 	"net"
 	"time"
-)
 
-const (
-	SideWhite = "white"
-	SideBlack = "black"
+	"github.com/notnil/chess"
 )
-
-type side string
 
 // random true/false
 func randomBool() bool {
@@ -22,58 +17,63 @@ func randomBool() bool {
 	return randNum.Intn(2) == 1
 }
 
-// return 2 sides in random order
-func getRandomizedSides() (side, side) {
+// return 2 colors in random order
+func randomizedColors() (chess.Color, chess.Color) {
+	var choice chess.Color
 	if randomBool() {
-		return SideWhite, SideBlack
+		choice = chess.White
+	} else {
+		choice = chess.Black
 	}
 
-	return SideBlack, SideWhite
+	return choice, choice.Other()
 }
 
-type Game struct {
-	players map[side]net.Conn
-	turn    side
+// holds connections to both players along with the chess game
+type GameLobby struct {
+	players   map[chess.Color]net.Conn
+	turn      net.Conn
+	chessGame chess.Game
 }
 
 // return a new game variable with default values using 2 player connections
-func NewGame(player1Conn net.Conn, player2Conn net.Conn) Game {
-	side1, side2 := getRandomizedSides()
-	return Game{
-		players: map[side]net.Conn{side1: player1Conn, side2: player2Conn},
-		turn:    SideWhite,
-	}
-}
+func NewGameLobby(player1Conn net.Conn, player2Conn net.Conn) GameLobby {
+	color1, color2 := randomizedColors()
+	players := map[chess.Color]net.Conn{color1: player1Conn, color2: player2Conn}
 
-func getOpponent(playerConn net.Conn, g Game) (side, net.Conn) {
-	for side, conn := range g.players {
-		if conn != playerConn {
-			return side, conn
-		}
+	return GameLobby{
+		players:   players,
+		turn:      players[chess.White],
+		chessGame: *chess.NewGame(chess.UseNotation(chess.UCINotation{})),
 	}
-
-	return "", nil
 }
 
 // send start messages and start handling player messages
-func (g *Game) run() {
+func (gl *GameLobby) run() {
 	msgChan := make(chan Message)
-	for side, conn := range g.players {
-		sendStart(conn, side)
+	initialBoard := *gl.chessGame.Position().Board()
+	for side, conn := range gl.players {
+		sendStart(conn, side, initialBoard)
 		go getMessages(conn, msgChan)
 	}
 
 	for msg := range msgChan {
 		switch msg.Action {
 		case SendMove:
-			if msg.From != g.players[g.turn] {
+			// skip the message if it isn't the player's turn
+			if msg.From != gl.turn {
 				continue
 			}
 
-			oppSide, oppConn := getOpponent(msg.From, *g)
-			sendMessage(oppConn, msg)
+			// attempt to make the move on the board
+			move := msg.Data["move"].(string)
+			err := gl.chessGame.MoveStr(move)
+			if err != nil {
+				continue
+			}
 
-			g.turn = oppSide
+			sendBoard(gl.players[chess.White], gl.players[chess.Black], *gl.chessGame.Position().Board())
+			gl.turn = gl.players[gl.chessGame.Position().Turn()]
 		}
 	}
 }
