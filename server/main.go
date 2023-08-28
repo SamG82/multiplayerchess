@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 )
-
-const port = ":3000"
 
 // create new game variables from the playerQueue
 func createGames(playerQueue chan net.Conn) {
@@ -42,7 +41,7 @@ func newConnHandler(conn net.Conn, gameQueue chan<- net.Conn) {
 }
 
 func main() {
-	listener, err := net.Listen("tcp", port)
+	listener, err := net.Listen("tcp", ":"+os.Args[1])
 	if err != nil {
 		fmt.Println(err)
 		return

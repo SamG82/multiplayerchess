@@ -1,10 +1,14 @@
 import pygame
+import sys
 
 import drawer
 from network import Client
 from game import Game
 
 def main():
+    server_address = sys.argv[1]
+    server_port = sys.argv[2]
+
     screen_size = (1200, 800)
 
     screen = pygame.display.set_mode(screen_size)
@@ -16,7 +20,7 @@ def main():
     menu.message_popup("Waiting for opponent", 400, 250)
     pygame.display.flip()
 
-    client = Client("127.0.0.1", 3000)
+    client = Client(server_address, int(server_port))
     client.connect()
     game_request = client.request_game()
 
