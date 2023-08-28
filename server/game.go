@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"net"
 	"time"
@@ -67,9 +68,27 @@ func (gl *GameLobby) run() {
 
 			// attempt to make the move on the board
 			move := msg.Data["move"].(string)
+			fmt.Println(move)
 			err := gl.chessGame.MoveStr(move)
 			if err != nil {
 				continue
+			}
+
+			if gl.chessGame.Method() != chess.NoMethod {
+				var winner string
+
+				outcome := gl.chessGame.Outcome()
+				if outcome == chess.WhiteWon {
+					winner = "White"
+				} else if outcome == chess.BlackWon {
+					winner = "Black"
+				}
+
+				sendConclusion(
+					gl.players[chess.White],
+					gl.players[chess.Black],
+					winner,
+					gl.chessGame.Method().String())
 			}
 
 			sendBoard(gl.players[chess.White], gl.players[chess.Black], *gl.chessGame.Position().Board())

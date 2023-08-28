@@ -17,6 +17,7 @@ const (
 	Ready          = "r"  // ready check for clients
 	SendMove       = "sm" // sending a move
 	UpdateBoard    = "ub" // sending a new updated board state
+	Conclude       = "c"  // game is concluding
 )
 
 // represents a message between client and server
@@ -54,12 +55,21 @@ func sendStart(playerConn net.Conn, color chess.Color, initialBoard chess.Board)
 	playerConn.Write(messageJSON(&msg))
 }
 
+func sendConclusion(player1 net.Conn, player2 net.Conn, winner string, reason string) {
+	msg := Message{Action: Conclude, Data: map[string]interface{}{"winner": winner, "reason": reason}}
+	msgJson := messageJSON(&msg)
+	player1.Write(msgJson)
+	player2.Write(msgJson)
+}
+
 // send a new board state to both players
 func sendBoard(player1 net.Conn, player2 net.Conn, board chess.Board) {
 
 	msg := Message{Action: UpdateBoard, Data: boardData(board)}
-	player1.Write(messageJSON(&msg))
-	player2.Write(messageJSON(&msg))
+	msgJson := messageJSON(&msg)
+
+	player1.Write(msgJson)
+	player2.Write(msgJson)
 }
 
 // wrapper for making a buffer and reading a message from connection
