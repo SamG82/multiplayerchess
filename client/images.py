@@ -10,9 +10,12 @@ loaded_images = dict([
                 for image_name in image_files
                 ])
 
-# get an image object at a scaled size from its name
-def get(name, size, alpha=255):
+# get an image object and a rect at a scaled size
+def get(name, size, need_rect=False):
     image = loaded_images[name]
-    image.set_alpha(alpha)
+    scaled_img = scale(image, (size,) * 2)
 
+    if need_rect:
+        return (scaled_img, scaled_img.get_rect())
+    
     return scale(image, (size,) * 2)

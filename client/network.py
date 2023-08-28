@@ -18,6 +18,7 @@ class Action(str, Enum):
     READY = "r"
     SEND_MOVE = "sm"
     UPDATE_BOARD = "ub"
+    CONCLUDE = "c"
 
 
 # represents a message sent between client and server
@@ -49,7 +50,7 @@ class Client:
         self.server_address = server_address
         self.server_port = server_port
 
-        self.board_updates = queue.Queue()
+        self.messages = queue.Queue()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.color = None
@@ -68,7 +69,7 @@ class Client:
         self.socket.send(msg.to_json_bytes())
 
     # sends a start game message to the server
-    # side assigned by the server will be set to self.side
+    # side assigned by the server will be set to self.color
     @threaded
     def request_game(self):
         msg = Message(Action.REQUEST_GAME, {})
@@ -85,20 +86,22 @@ class Client:
 
             # opponent was found and game is starting
             elif response.action == Action.START_GAME:
-                self.side = response.data["color"]
-                self.board_updates.put(response.data["board"])
+                self.color = response.data["color"]
+                self.messages.put(response)
                 opponent_found = True
 
-    # listen for incoming communication
+    # listen for incoming communication, puts them in self.messages queue
     @threaded
     def listen(self):
         while True:
             msg = Message.from_json_bytes(self.socket.recv(BUFFER_SIZE))
-            if msg.action == Action.UPDATE_BOARD:
-                self.board_updates.put(msg.data)
+            self.messages.put(msg)
 
     # send a move message
     @threaded
-    def send_move(self, move: str, promo_choice=None):
-        msg = Message(Action.SEND_MOVE, {"move": move, "promo_choice": promo_choice})
-        self.send_message(msg)
+    def send_move(self, from_square: str, to_square: str, promotion_choice=None):
+        data = {"move": f"{from_square}{to_square}"}
+        if promotion_choice:
+            data["move"] += promotion_choice
+        
+        self.send_message(Message(Action.SEND_MOVE, data))

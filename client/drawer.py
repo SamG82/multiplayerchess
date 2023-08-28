@@ -19,16 +19,17 @@ class MenuDrawer:
         if position is None:
             position = self.screen.get_rect().center
 
+        # container for extra padding
+        container = pygame.Rect(0, 0, width, height)
+        container.center = position
+
         message = MenuDrawer.font.render(text, True, "black", "white")
         rect = message.get_rect()
-
         rect.center = position
-        rect.width = width
-        rect.height = height
 
+        pygame.draw.rect(self.screen, "white", container)
         self.screen.blit(message, rect)
-        pygame.display.flip()
-
+        
 
 # drawer for the game-related components
 class BoardDrawer:
@@ -77,10 +78,10 @@ class BoardDrawer:
         self.file_start = file_start
 
         self.selected_square = None
-        self.piece_positions = {}
+        self.piece_locations = dict()
 
     # draws the board
-    def draw_board(self):
+    def draw(self):
         start_light = True
 
         # draw the grid
@@ -89,7 +90,7 @@ class BoardDrawer:
                 square_name = f"{BoardDrawer.square_files[abs(file)]}{BoardDrawer.square_ranks[abs(rank)]}"
                 square_rect = None
 
-                if self.selected_square is not None and square_name == self.selected_square:
+                if self.selected_square and square_name == self.selected_square:
                     square_rect = self.screen.blit(images.get("yellow_square", self.square_size), (x, y))
 
                 elif start_light:
@@ -98,20 +99,20 @@ class BoardDrawer:
                 else:
                     square_rect = self.screen.blit(images.get("dark_square", self.square_size), (x, y))
                 
-                try:
-                    piece_name = self.piece_positions[square_name]
-                    piece_img = images.get(piece_name, self.piece_size)
-                    piece_rect = piece_img.get_rect()
-                    piece_rect.center = square_rect.center
-                    self.screen.blit(piece_img, piece_rect)
-                    self.pieces[square_name] = piece_rect
-
-                except KeyError:
-                    pass
-
                 self.squares[square_name] = square_rect
-
                 start_light = not start_light
+
+                piece_name = self.piece_locations.get(square_name, None)
+                if not piece_name:
+                    continue
+                
+                piece_img, piece_rect = images.get(piece_name, self.piece_size, need_rect=True)
+
+                # center the piece with the square
+                piece_rect.center = square_rect.center
+                self.screen.blit(piece_img, piece_rect)
+                self.pieces[square_name] = piece_rect
+
             start_light = not start_light
 
     # draw the promotion prompt, returns a list of rects that house the promotion options
