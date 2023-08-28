@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net"
 
 	"github.com/notnil/chess"
@@ -18,6 +17,7 @@ const (
 	SendMove       = "sm" // sending a move
 	UpdateBoard    = "ub" // sending a new updated board state
 	Conclude       = "c"  // game is concluding
+	Disconnect     = "dc" // client disconnected
 )
 
 // represents a message between client and server
@@ -44,32 +44,33 @@ func boardData(b chess.Board) map[string]interface{} {
 	return boardData
 }
 
+func writeMessage(msg Message, conns ...net.Conn) {
+	for _, conn := range conns {
+		conn.Write(messageJSON(&msg))
+	}
+}
+
 // sends a start message with initial board state and players assigned side to the player
-func sendStart(playerConn net.Conn, color chess.Color, initialBoard chess.Board) {
+func sendStart(color chess.Color, initialBoard chess.Board, playerConns ...net.Conn) {
 	data := map[string]interface{}{
 		"color": color.String(),
 		"board": boardData(initialBoard),
 	}
 
 	msg := Message{Action: StartGame, Data: data}
-	playerConn.Write(messageJSON(&msg))
+	writeMessage(msg, playerConns...)
 }
 
-func sendConclusion(player1 net.Conn, player2 net.Conn, winner string, reason string) {
+// sends a conclusion message with winner and reason
+func sendConclusion(winner string, reason string, playerConns ...net.Conn) {
 	msg := Message{Action: Conclude, Data: map[string]interface{}{"winner": winner, "reason": reason}}
-	msgJson := messageJSON(&msg)
-	player1.Write(msgJson)
-	player2.Write(msgJson)
+	writeMessage(msg, playerConns...)
 }
 
 // send a new board state to both players
-func sendBoard(player1 net.Conn, player2 net.Conn, board chess.Board) {
-
+func sendBoard(board chess.Board, playerConns ...net.Conn) {
 	msg := Message{Action: UpdateBoard, Data: boardData(board)}
-	msgJson := messageJSON(&msg)
-
-	player1.Write(msgJson)
-	player2.Write(msgJson)
+	writeMessage(msg, playerConns...)
 }
 
 // wrapper for making a buffer and reading a message from connection
@@ -89,7 +90,7 @@ func readFromConn(conn net.Conn) (Message, error) {
 // writes a ready message to the connection and expects one back
 func connIsAlive(conn net.Conn) bool {
 	msg := Message{Action: Ready, Data: map[string]interface{}{}}
-	conn.Write(messageJSON(&msg))
+	writeMessage(msg, conn)
 
 	response, _ := readFromConn(conn)
 	return response.Action == Ready
@@ -100,7 +101,8 @@ func getMessages(playerConn net.Conn, msgChan chan<- Message) {
 	for {
 		msg, err := readFromConn(playerConn)
 		if err != nil {
-			fmt.Println(err)
+			msgChan <- Message{Action: Disconnect, From: playerConn, Data: map[string]interface{}{}}
+			return
 		}
 		msgChan <- msg
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"net"
 	"time"
@@ -30,6 +29,17 @@ func randomizedColors() (chess.Color, chess.Color) {
 	return choice, choice.Other()
 }
 
+// returns a winner string from an outcome
+func getWinner(outcome chess.Outcome) string {
+	if outcome == chess.WhiteWon {
+		return "White"
+	} else if outcome == chess.BlackWon {
+		return "Black"
+	} else {
+		return "Draw"
+	}
+}
+
 // holds connections to both players along with the chess game
 type GameLobby struct {
 	players   map[chess.Color]net.Conn
@@ -54,7 +64,7 @@ func (gl *GameLobby) run() {
 	msgChan := make(chan Message)
 	initialBoard := *gl.chessGame.Position().Board()
 	for side, conn := range gl.players {
-		sendStart(conn, side, initialBoard)
+		sendStart(side, initialBoard, conn)
 		go getMessages(conn, msgChan)
 	}
 
@@ -68,31 +78,38 @@ func (gl *GameLobby) run() {
 
 			// attempt to make the move on the board
 			move := msg.Data["move"].(string)
-			fmt.Println(move)
 			err := gl.chessGame.MoveStr(move)
 			if err != nil {
 				continue
 			}
 
-			if gl.chessGame.Method() != chess.NoMethod {
-				var winner string
-
-				outcome := gl.chessGame.Outcome()
-				if outcome == chess.WhiteWon {
-					winner = "White"
-				} else if outcome == chess.BlackWon {
-					winner = "Black"
-				}
-
-				sendConclusion(
-					gl.players[chess.White],
-					gl.players[chess.Black],
-					winner,
-					gl.chessGame.Method().String())
+			if endReason := gl.chessGame.Method(); endReason != chess.NoMethod {
+				winner := getWinner(gl.chessGame.Outcome())
+				sendConclusion(winner, endReason.String(), gl.players[chess.White], gl.players[chess.Black])
 			}
 
-			sendBoard(gl.players[chess.White], gl.players[chess.Black], *gl.chessGame.Position().Board())
+			sendBoard(*gl.chessGame.Position().Board(), gl.players[chess.White], gl.players[chess.Black])
 			gl.turn = gl.players[gl.chessGame.Position().Turn()]
+
+		case Disconnect:
+			// game is already done
+			if gl.chessGame.Method() != chess.NoMethod {
+				continue
+			}
+
+			var disconnectedColor chess.Color
+			for color, conn := range gl.players {
+				if conn == msg.From {
+					disconnectedColor = color
+				}
+			}
+
+			gl.chessGame.Resign(disconnectedColor)
+			winner := getWinner(gl.chessGame.Outcome())
+			reason := gl.chessGame.Method().String()
+
+			sendConclusion(winner, reason, gl.players[chess.White], gl.players[chess.Black])
+			return
 		}
 	}
 }
